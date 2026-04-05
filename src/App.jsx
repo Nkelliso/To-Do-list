@@ -67,7 +67,7 @@ export default function App() {
         </div>
       </div>
 
-      <div className="fixed bottom-2 right-3 text-[10px] text-gray-700 opacity-40 pointer-events-none select-none z-50">
+      <div className="fixed bottom-2 left-3 text-[10px] text-white pointer-events-none select-none z-50">
         v1.1
       </div>
 
