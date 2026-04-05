@@ -1,18 +1,30 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, forwardRef, useImperativeHandle } from 'react'
 
-export default function IdeasPage({ content, onChange }) {
+const IdeasPage = forwardRef(function IdeasPage({ content, onChange }, ref) {
   const editorRef = useRef(null)
   const debounceRef = useRef(null)
   const [saved, setSaved] = useState(false)
   const initialized = useRef(false)
 
-  // Set HTML once on mount (don't overwrite while user is typing)
+  // Set HTML once on mount only
   useEffect(() => {
     if (editorRef.current && !initialized.current) {
       editorRef.current.innerHTML = content || ''
       initialized.current = true
     }
   })
+
+  // Expose flush() so parent can force-save before switching tabs
+  useImperativeHandle(ref, () => ({
+    flush() {
+      clearTimeout(debounceRef.current)
+      if (editorRef.current) {
+        onChange(editorRef.current.innerHTML)
+      }
+    }
+  }))
+
+  useEffect(() => () => clearTimeout(debounceRef.current), [])
 
   const triggerSave = () => {
     clearTimeout(debounceRef.current)
@@ -25,56 +37,52 @@ export default function IdeasPage({ content, onChange }) {
     }, 500)
   }
 
-  // Bullet auto-continue: if line starts with "- ", pressing Enter
-  // continues the bullet. If line is empty bullet ("- "), Enter exits.
   const handleKeyDown = (e) => {
     if (e.key !== 'Enter') return
 
     const sel = window.getSelection()
     if (!sel || !sel.rangeCount) return
-
     const range = sel.getRangeAt(0)
 
-    // Walk up from the cursor to find the nearest block-level element
-    // inside the editor (div or p that is a direct child of editorRef)
-    let node = range.startContainer
-    let block = node.nodeType === Node.TEXT_NODE ? node.parentElement : node
-    while (block && block !== editorRef.current) {
-      if (block.parentElement === editorRef.current) break
-      block = block.parentElement
+    const node = range.startContainer
+
+    // Find the closest block element that is a direct child of the editor,
+    // OR the editor itself when text sits unwrapped (first line before any Enter).
+    let lineEl = node.nodeType === Node.TEXT_NODE ? node.parentElement : node
+    while (lineEl && lineEl !== editorRef.current && lineEl.parentElement !== editorRef.current) {
+      lineEl = lineEl.parentElement
     }
 
-    const lineText = block && block !== editorRef.current
-      ? block.textContent
-      : ''
+    // lineEl is either a block child of editor, or the editor itself (first line)
+    const lineText = lineEl === editorRef.current
+      ? (node.nodeType === Node.TEXT_NODE ? node.textContent : lineEl.textContent)
+      : lineEl?.textContent ?? ''
 
     if (!lineText.startsWith('- ')) return
 
     e.preventDefault()
 
-    // Empty bullet ("- " with nothing after) → exit bullet, plain newline
     if (lineText === '- ') {
-      // Clear the dash from the current line then insert paragraph
-      const clearRange = document.createRange()
-      clearRange.selectNodeContents(block)
-      sel.removeAllRanges()
-      sel.addRange(clearRange)
-      document.execCommand('delete')
+      // Empty bullet → clear dash and exit bullet mode
+      if (lineEl && lineEl !== editorRef.current) {
+        const clearRange = document.createRange()
+        clearRange.selectNodeContents(lineEl)
+        sel.removeAllRanges()
+        sel.addRange(clearRange)
+        document.execCommand('delete')
+      }
       document.execCommand('insertParagraph')
     } else {
-      // Continue bullet on the next line
+      // Continue the bullet on next line
       document.execCommand('insertParagraph')
       document.execCommand('insertText', false, '- ')
     }
   }
 
-  // Use onMouseDown + preventDefault so toolbar clicks don't steal editor focus
   const fmt = (cmd, value) => {
     editorRef.current?.focus()
     document.execCommand(cmd, false, value ?? null)
   }
-
-  useEffect(() => () => clearTimeout(debounceRef.current), [])
 
   return (
     <div className="flex flex-col flex-1 min-h-0" style={{ background: '#120f08' }}>
@@ -97,10 +105,12 @@ export default function IdeasPage({ content, onChange }) {
         <div className="w-px h-4 bg-green-900/40 mx-1.5 flex-shrink-0" />
 
         <Btn onMouseDown={() => fmt('fontSize', '5')} title="Larger text">
-          <span className="text-base leading-none">A</span><span className="text-[9px] align-super leading-none ml-px">+</span>
+          <span className="text-base leading-none">A</span>
+          <span className="text-[9px] align-super leading-none ml-px">+</span>
         </Btn>
         <Btn onMouseDown={() => fmt('fontSize', '2')} title="Smaller text">
-          <span className="text-xs leading-none">A</span><span className="text-[9px] align-super leading-none ml-px">−</span>
+          <span className="text-xs leading-none">A</span>
+          <span className="text-[9px] align-super leading-none ml-px">−</span>
         </Btn>
       </div>
 
@@ -126,7 +136,9 @@ export default function IdeasPage({ content, onChange }) {
       </div>
     </div>
   )
-}
+})
+
+export default IdeasPage
 
 function Btn({ onMouseDown, title, children }) {
   return (

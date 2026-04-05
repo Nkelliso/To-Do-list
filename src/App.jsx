@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { useAuth } from './hooks/useAuth'
 import { useTasks } from './hooks/useTasks'
 import { useNotes } from './hooks/useNotes'
@@ -16,6 +16,14 @@ export default function App() {
   const [showModal, setShowModal] = useState(false)
   const [selectedTaskId, setSelectedTaskId] = useState(null)
   const [page, setPage] = useState('todo')
+  const ideasRef = useRef(null)
+
+  const handlePageChange = (newPage) => {
+    if (page === 'ideas' && newPage !== 'ideas') {
+      ideasRef.current?.flush()
+    }
+    setPage(newPage)
+  }
 
   if (user === undefined) {
     return (
@@ -41,49 +49,50 @@ export default function App() {
         onAddTask={() => setShowModal(true)}
         onSignOut={signOut}
         page={page}
-        onPageChange={setPage}
+        onPageChange={handlePageChange}
       />
 
-      {page === 'ideas' ? (
-        <div className="flex flex-col flex-1 min-h-0 w-full">
-          {loaded && (
-            <IdeasPage
-              content={content}
-              onChange={saveContent}
-            />
-          )}
-        </div>
-      ) : (
-        <div className="flex flex-1 md:min-h-0 flex-col md:flex-row">
-          {/* Left column — task list */}
-          <div
-            className="w-full md:w-2/5 md:flex-shrink-0 md:overflow-y-auto border-b md:border-b-0 md:border-r border-green-900/40"
-            style={{ background: '#18120a' }}
-          >
-            <TaskList
-              tasks={tasks}
-              selectedTaskId={selectedTaskId}
-              onSelectTask={setSelectedTaskId}
-              onToggle={toggleTask}
-              onDelete={deleteTask}
-              onUpdate={updateTask}
-            />
-          </div>
+      {/* Ideas page — always mounted so editor DOM is preserved */}
+      <div className={`flex flex-col flex-1 min-h-0 w-full ${page !== 'ideas' ? 'hidden' : ''}`}>
+        {loaded && (
+          <IdeasPage
+            ref={ideasRef}
+            content={content}
+            onChange={saveContent}
+          />
+        )}
+      </div>
 
-          {/* Right column — calendar */}
-          <div
-            className="flex-1 md:overflow-y-auto"
-            style={{ background: '#120f08' }}
-          >
-            <WeeklyCalendar
-              tasks={tasks}
-              selectedTaskId={selectedTaskId}
-              onSelectTask={setSelectedTaskId}
-              onUpdateTask={updateTask}
-            />
-          </div>
+      {/* To-Do + Calendar — always mounted */}
+      <div className={`flex flex-1 md:min-h-0 flex-col md:flex-row ${page === 'ideas' ? 'hidden' : ''}`}>
+        {/* Left column — task list */}
+        <div
+          className="w-full md:w-2/5 md:flex-shrink-0 md:overflow-y-auto border-b md:border-b-0 md:border-r border-green-900/40"
+          style={{ background: '#18120a' }}
+        >
+          <TaskList
+            tasks={tasks}
+            selectedTaskId={selectedTaskId}
+            onSelectTask={setSelectedTaskId}
+            onToggle={toggleTask}
+            onDelete={deleteTask}
+            onUpdate={updateTask}
+          />
         </div>
-      )}
+
+        {/* Right column — calendar */}
+        <div
+          className="flex-1 md:overflow-y-auto"
+          style={{ background: '#120f08' }}
+        >
+          <WeeklyCalendar
+            tasks={tasks}
+            selectedTaskId={selectedTaskId}
+            onSelectTask={setSelectedTaskId}
+            onUpdateTask={updateTask}
+          />
+        </div>
+      </div>
 
       {showModal && (
         <AddTaskModal
