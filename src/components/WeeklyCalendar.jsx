@@ -3,12 +3,12 @@ import { useEffect, useRef, useState } from 'react'
 const TASK_DAYS = ['M', 'Tu', 'W', 'Th', 'F', 'Wknd']
 
 const ALL_COLUMNS = [
-  { key: 'M',    label: 'M',       isWeekend: false },
-  { key: 'Tu',   label: 'Tu',      isWeekend: false },
-  { key: 'W',    label: 'W',       isWeekend: false },
-  { key: 'Th',   label: 'Th',      isWeekend: false },
-  { key: 'F',    label: 'F',       isWeekend: false },
-  { key: 'Wknd', label: 'Weekend', isWeekend: true  },
+  { key: 'M',    label: 'M',       fullName: 'Monday' },
+  { key: 'Tu',   label: 'Tu',      fullName: 'Tuesday' },
+  { key: 'W',    label: 'W',       fullName: 'Wednesday' },
+  { key: 'Th',   label: 'Th',      fullName: 'Thursday' },
+  { key: 'F',    label: 'F',       fullName: 'Friday' },
+  { key: 'Wknd', label: 'Weekend', fullName: 'Weekend' },
 ]
 
 const START_HOUR = 8
@@ -80,14 +80,28 @@ function pixelsToTime(relY) {
   return `${String(h).padStart(2, '0')}:${String(rawM).padStart(2, '0')}`
 }
 
+// Groups scheduled tasks by hour for the mobile compact view
+function groupByHour(tasks) {
+  const groups = {}
+  for (const task of tasks) {
+    if (!task.timeDue) continue
+    const h = parseInt(task.timeDue.split(':')[0], 10)
+    if (!groups[h]) groups[h] = []
+    groups[h].push(task)
+  }
+  return Object.keys(groups)
+    .sort((a, b) => Number(a) - Number(b))
+    .map(h => ({ hour: Number(h), tasks: groups[h] }))
+}
+
 function TaskPill({ task, isSelected, isBeingDragged, onPointerDown }) {
   const color = PRIORITY_PILL[task.priority] || PRIORITY_PILL[1]
   return (
     <button
       onPointerDown={(e) => onPointerDown(e, task)}
       title={task.name}
-      className={`w-full text-left text-[11px] px-1.5 py-0.5 rounded truncate leading-tight touch-none select-none
-        cursor-grab active:cursor-grabbing transition-all ${color}
+      className={`w-full text-left text-[11px] px-1.5 py-0.5 rounded truncate leading-tight
+        touch-none select-none cursor-grab active:cursor-grabbing transition-all ${color}
         ${isSelected ? 'ring-1 ring-blue-500 ring-offset-1 ring-offset-black' : 'hover:brightness-125'}
         ${task.completed ? 'opacity-40' : ''}
         ${isBeingDragged ? 'opacity-30' : ''}`}
@@ -97,16 +111,104 @@ function TaskPill({ task, isSelected, isBeingDragged, onPointerDown }) {
   )
 }
 
+// ── Mobile compact view ─────────────────────────────────────────────────────
+function MobileCalendarView({ tasksByDay, todayKey, selectedTaskId, onSelectTask, startDrag }) {
+  return (
+    <div className="px-3 pb-6 pt-1">
+      {ALL_COLUMNS.map(({ key, fullName }) => {
+        const group = tasksByDay[key] || { scheduled: [], unscheduled: [] }
+        const byHour = groupByHour(group.scheduled)
+        const isEmpty = group.unscheduled.length === 0 && group.scheduled.length === 0
+        const isToday = key === todayKey
+
+        return (
+          <div
+            key={key}
+            className={`mb-2 rounded-lg border overflow-hidden ${
+              isToday ? 'border-green-700/50' : 'border-green-900/30'
+            }`}
+          >
+            {/* Day label row */}
+            <div className={`flex items-center gap-1.5 px-3 py-1.5 ${
+              isToday ? 'bg-green-950/30' : 'bg-white/[0.02]'
+            }`}>
+              <span className={`text-xs font-semibold ${isToday ? 'text-green-400' : 'text-gray-500'}`}>
+                {fullName}
+              </span>
+              {isToday && <div className="w-1.5 h-1.5 rounded-full bg-blue-500 flex-shrink-0" />}
+            </div>
+
+            {/* Task slots */}
+            <div className="px-2 py-1.5 flex flex-col gap-1">
+              {isEmpty ? (
+                <p className="text-[11px] text-gray-700 px-1">No tasks scheduled</p>
+              ) : (
+                <>
+                  {/* Unscheduled tasks */}
+                  {group.unscheduled.length > 0 && (
+                    <div className="flex items-start gap-2">
+                      <span className="text-[10px] text-gray-700 w-7 pt-0.5 flex-shrink-0 tabular-nums">—</span>
+                      <div className="flex-1 min-w-0 flex flex-col gap-0.5">
+                        {group.unscheduled.map(task => (
+                          <TaskPill
+                            key={task.id}
+                            task={task}
+                            isSelected={task.id === selectedTaskId}
+                            isBeingDragged={false}
+                            onPointerDown={startDrag}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Scheduled tasks grouped by hour */}
+                  {byHour.map(({ hour, tasks }) => (
+                    <div key={hour} className="flex items-start gap-2">
+                      <span className="text-[10px] text-gray-600 w-7 pt-0.5 flex-shrink-0 tabular-nums">
+                        {formatHourLabel(hour)}
+                      </span>
+                      <div className="flex-1 min-w-0 flex flex-col gap-0.5">
+                        {tasks.map(task => (
+                          <TaskPill
+                            key={task.id}
+                            task={task}
+                            isSelected={task.id === selectedTaskId}
+                            isBeingDragged={false}
+                            onPointerDown={startDrag}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </>
+              )}
+            </div>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
+// ── Main component ──────────────────────────────────────────────────────────
 export default function WeeklyCalendar({ tasks, selectedTaskId, onSelectTask, onUpdateTask }) {
   const todayKey = getTodayKey()
   const timeGridRef = useRef(null)
 
-  // Drag state — mutable ref so pointermove doesn't re-run effects
+  // Responsive: track whether we're on mobile
+  const [isMobile, setIsMobile] = useState(() => window.innerWidth < 768)
+  useEffect(() => {
+    const handler = () => setIsMobile(window.innerWidth < 768)
+    window.addEventListener('resize', handler)
+    return () => window.removeEventListener('resize', handler)
+  }, [])
+
+  // Drag state
   const dragRef = useRef(null)
   const [isDragging, setIsDragging] = useState(false)
   const [ghostPos, setGhostPos] = useState({ x: 0, y: 0 })
 
-  // Keep fresh refs to callbacks (avoids stale closures in the pointer effect)
   const cbRef = useRef({ onSelectTask, onUpdateTask, selectedTaskId })
   useEffect(() => { cbRef.current = { onSelectTask, onUpdateTask, selectedTaskId } })
 
@@ -151,12 +253,9 @@ export default function WeeklyCalendar({ tasks, selectedTaskId, onSelectTask, on
           const col = ALL_COLUMNS[colIndex]
 
           const newDayDue = col.key
-          // Recalculate time if dropped in the time grid area
           const newTimeDue = (relY >= 0 && relY <= TOTAL_HEIGHT)
             ? pixelsToTime(relY)
             : (d.task.timeDue || '')
-
-          // Auto-update priority only if day changed; cap at 4 (P5 = manual only)
           const newPriority = newDayDue !== d.task.dayDue
             ? getDayPriority(newDayDue)
             : d.task.priority
@@ -164,7 +263,6 @@ export default function WeeklyCalendar({ tasks, selectedTaskId, onSelectTask, on
           onUpdateTask(d.taskId, { dayDue: newDayDue, timeDue: newTimeDue, priority: newPriority })
         }
       } else if (!d.moved) {
-        // Short press = select/deselect
         onSelectTask(d.taskId === selectedTaskId ? null : d.taskId)
       }
 
@@ -192,33 +290,36 @@ export default function WeeklyCalendar({ tasks, selectedTaskId, onSelectTask, on
   }
 
   const hasAnyUnscheduled = TASK_DAYS.some(d => tasksByDay[d].unscheduled.length > 0)
-  const draggingTaskId = dragRef.current?.taskId
+  const draggingTaskId = isDragging && dragRef.current?.moved ? dragRef.current?.taskId : null
 
   return (
     <div style={{ cursor: isDragging ? 'grabbing' : 'default' }}>
 
-      {/* ── Sticky header ── */}
+      {/* ── Sticky header (shared by both views) ── */}
       <div className="sticky top-0 z-20" style={{ background: '#06080a' }}>
         <div className="flex items-center gap-3 px-4 pt-4 pb-2">
-          <h2 className="text-xs font-semibold text-gray-600 tracking-widest uppercase">This Week</h2>
+          <h2 className="text-xs font-semibold text-gray-600 tracking-widest uppercase select-none">
+            This Week
+          </h2>
           {selectedTaskId && (
             <button
               onClick={() => onSelectTask(null)}
-              className="text-xs text-gray-700 hover:text-gray-400 transition-colors cursor-pointer"
+              className="text-xs text-gray-700 hover:text-gray-400 transition-colors cursor-pointer select-none"
             >
               Reset
             </button>
           )}
         </div>
 
-        <div className="flex border-b border-green-900/40">
+        {/* Day column headers — desktop only */}
+        <div className="hidden md:flex border-b border-green-900/40">
           <div className="w-10 flex-shrink-0" />
           {ALL_COLUMNS.map(({ key, label }) => {
             const isToday = key === todayKey
             return (
               <div
                 key={key}
-                className={`flex-1 flex flex-col items-center pb-1.5 pt-1 text-xs font-semibold tracking-wider ${
+                className={`flex-1 flex flex-col items-center pb-1.5 pt-1 text-xs font-semibold tracking-wider select-none ${
                   isToday ? 'text-green-500' : 'text-gray-600'
                 }`}
               >
@@ -233,86 +334,94 @@ export default function WeeklyCalendar({ tasks, selectedTaskId, onSelectTask, on
         </div>
       </div>
 
-      {/* ── Unscheduled strip ── */}
-      {hasAnyUnscheduled && (
-        <div className="flex border-b border-green-900/20">
-          <div className="w-10 flex-shrink-0 flex items-center justify-center">
-            <span className="text-[9px] text-gray-700">—</span>
-          </div>
-          {ALL_COLUMNS.map(({ key, isWeekend }) => {
-            const unscheduled = tasksByDay[key]?.unscheduled ?? []
-            return (
-              <div
-                key={key}
-                className={`flex-1 p-1 flex flex-col gap-0.5 min-h-8 border-l border-green-900/20 ${
-                  key === todayKey ? 'bg-green-950/10' : ''
-                }`}
-              >
-                {unscheduled.map(task => (
-                  <TaskPill
-                    key={task.id}
-                    task={task}
-                    isSelected={task.id === selectedTaskId}
-                    isBeingDragged={task.id === draggingTaskId && isDragging && dragRef.current?.moved}
-                    onPointerDown={startDrag}
-                  />
-                ))}
-              </div>
-            )
-          })}
-        </div>
+      {/* ── Mobile: compact day-by-day view ── */}
+      {isMobile && (
+        <MobileCalendarView
+          tasksByDay={tasksByDay}
+          todayKey={todayKey}
+          selectedTaskId={selectedTaskId}
+          onSelectTask={onSelectTask}
+          startDrag={startDrag}
+        />
       )}
 
-      {/* ── Time grid ── */}
-      <div ref={timeGridRef} className="flex" style={{ height: TOTAL_HEIGHT }}>
-        {/* Time labels */}
-        <div className="w-10 flex-shrink-0 relative select-none">
-          {HOUR_LINES.map(h => (
-            <div
-              key={h}
-              className="absolute right-1.5 text-[10px] text-gray-700 leading-none tabular-nums"
-              style={{ top: (h - START_HOUR) * HOUR_HEIGHT - 6 }}
-            >
-              {formatHourLabel(h)}
-            </div>
-          ))}
-        </div>
-
-        {/* Day columns */}
-        {ALL_COLUMNS.map(({ key, isWeekend }) => {
-          const positions = getPositions(tasksByDay[key]?.scheduled ?? [])
-          return (
-            <div
-              key={key}
-              className={`flex-1 relative border-l border-green-900/20 ${
-                key === todayKey ? 'bg-green-950/[0.07]' : ''
-              }`}
-            >
-              {HOUR_LINES.map(h => (
+      {/* ── Desktop: full scrollable time grid ── */}
+      {!isMobile && (
+        <>
+          {/* Unscheduled strip */}
+          {hasAnyUnscheduled && (
+            <div className="flex border-b border-green-900/20">
+              <div className="w-10 flex-shrink-0 flex items-center justify-center">
+                <span className="text-[9px] text-gray-700">—</span>
+              </div>
+              {ALL_COLUMNS.map(({ key }) => (
                 <div
-                  key={h}
-                  className="absolute w-full border-t border-green-900/15"
-                  style={{ top: (h - START_HOUR) * HOUR_HEIGHT }}
-                />
-              ))}
-              {positions.map(({ task, top }) => (
-                <div
-                  key={task.id}
-                  className="absolute left-0.5 right-0.5"
-                  style={{ top }}
+                  key={key}
+                  className={`flex-1 p-1 flex flex-col gap-0.5 min-h-8 border-l border-green-900/20 ${
+                    key === todayKey ? 'bg-green-950/10' : ''
+                  }`}
                 >
-                  <TaskPill
-                    task={task}
-                    isSelected={task.id === selectedTaskId}
-                    isBeingDragged={task.id === draggingTaskId && isDragging && dragRef.current?.moved}
-                    onPointerDown={startDrag}
-                  />
+                  {(tasksByDay[key]?.unscheduled ?? []).map(task => (
+                    <TaskPill
+                      key={task.id}
+                      task={task}
+                      isSelected={task.id === selectedTaskId}
+                      isBeingDragged={task.id === draggingTaskId}
+                      onPointerDown={startDrag}
+                    />
+                  ))}
                 </div>
               ))}
             </div>
-          )
-        })}
-      </div>
+          )}
+
+          {/* Time grid */}
+          <div ref={timeGridRef} className="flex" style={{ height: TOTAL_HEIGHT }}>
+            <div className="w-10 flex-shrink-0 relative select-none">
+              {HOUR_LINES.map(h => (
+                <div
+                  key={h}
+                  className="absolute right-1.5 text-[10px] text-gray-700 leading-none tabular-nums"
+                  style={{ top: (h - START_HOUR) * HOUR_HEIGHT - 6 }}
+                >
+                  {formatHourLabel(h)}
+                </div>
+              ))}
+            </div>
+
+            {ALL_COLUMNS.map(({ key }) => {
+              const positions = getPositions(tasksByDay[key]?.scheduled ?? [])
+              const isToday = key === todayKey
+              return (
+                <div
+                  key={key}
+                  className={`flex-1 relative border-l border-green-900/20 ${
+                    isToday ? 'bg-green-950/[0.07]' : ''
+                  }`}
+                >
+                  {HOUR_LINES.map(h => (
+                    <div
+                      key={h}
+                      className="absolute w-full border-t border-green-900/15"
+                      style={{ top: (h - START_HOUR) * HOUR_HEIGHT }}
+                    />
+                  ))}
+                  {positions.map(({ task, top }) => (
+                    <div key={task.id} className="absolute left-0.5 right-0.5" style={{ top }}>
+                      <TaskPill
+                        task={task}
+                        isSelected={task.id === selectedTaskId}
+                        isBeingDragged={task.id === draggingTaskId}
+                        onPointerDown={startDrag}
+                      />
+                    </div>
+                  ))}
+                </div>
+              )
+            })}
+          </div>
+        </>
+      )}
 
       {/* ── Drag ghost ── */}
       {isDragging && dragRef.current?.moved && (

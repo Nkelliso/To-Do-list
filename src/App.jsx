@@ -31,17 +31,17 @@ export default function App() {
   }
 
   return (
-    <div className="flex flex-col h-screen overflow-hidden bg-black">
+    <div className="flex flex-col min-h-screen md:h-screen md:overflow-hidden bg-black">
       <Header
         user={user}
         onAddTask={() => setShowModal(true)}
         onSignOut={signOut}
       />
 
-      <div className="flex flex-1 min-h-0 flex-col md:flex-row">
+      <div className="flex flex-1 md:min-h-0 flex-col md:flex-row">
         {/* Left column — 40% — master task list */}
         <div
-          className="w-full md:w-2/5 flex-shrink-0 overflow-y-auto border-b md:border-b-0 md:border-r border-green-900/50"
+          className="w-full md:w-2/5 md:flex-shrink-0 md:overflow-y-auto border-b md:border-b-0 md:border-r border-green-900/50"
           style={{ background: '#0a0a08' }}
         >
           <TaskList
@@ -55,7 +55,7 @@ export default function App() {
 
         {/* Right column — 60% — weekly calendar */}
         <div
-          className="flex-1 overflow-y-auto"
+          className="flex-1 md:overflow-y-auto"
           style={{ background: '#06080a' }}
         >
           <WeeklyCalendar

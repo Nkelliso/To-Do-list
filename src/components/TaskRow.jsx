@@ -41,7 +41,7 @@ export default function TaskRow({ task, isSelected, onSelect, onToggle, onDelete
     <div
       ref={rowRef}
       onClick={onSelect}
-      className={`flex items-center gap-3 px-3 py-2.5 rounded-lg border transition-all group cursor-pointer ${
+      className={`flex items-center gap-3 px-3 py-2.5 rounded-lg border transition-all group cursor-pointer select-none ${
         isSelected
           ? 'border-green-700/60 bg-green-950/20'
           : 'border-transparent hover:border-green-900/50 hover:bg-white/[0.02]'

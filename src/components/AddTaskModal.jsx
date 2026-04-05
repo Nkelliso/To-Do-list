@@ -75,7 +75,7 @@ export default function AddTaskModal({ onClose, onSave }) {
 
         <div className="flex flex-col gap-4">
           <div className="flex flex-col gap-1">
-            <label className="text-sm font-medium text-gray-400">Name</label>
+            <label className="text-sm font-medium text-gray-400">Task Name</label>
             <input
               type="text"
               value={name}
@@ -138,13 +138,13 @@ export default function AddTaskModal({ onClose, onSave }) {
         <div className="flex gap-3 justify-end pt-1">
           <button
             onClick={onClose}
-            className="px-4 py-2 text-sm font-medium text-gray-500 hover:text-gray-200 transition-colors cursor-pointer"
+            className="px-4 py-2 text-sm font-medium text-gray-500 hover:text-gray-200 transition-colors cursor-pointer select-none"
           >
             Cancel
           </button>
           <button
             onClick={handleSave}
-            className="px-5 py-2 text-sm font-medium text-white bg-green-700 hover:bg-green-600 rounded-lg transition-colors cursor-pointer"
+            className="px-5 py-2 text-sm font-medium text-white bg-green-700 hover:bg-green-600 rounded-lg transition-colors cursor-pointer select-none"
           >
             Save
           </button>
