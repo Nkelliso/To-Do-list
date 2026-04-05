@@ -15,7 +15,7 @@ export default function App() {
 
   if (user === undefined) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-black">
+      <div className="min-h-screen flex items-center justify-center" style={{ background: '#0d0b06' }}>
         <div className="w-8 h-8 border-2 border-green-600 border-t-transparent rounded-full animate-spin" />
       </div>
     )
@@ -31,7 +31,7 @@ export default function App() {
   }
 
   return (
-    <div className="flex flex-col min-h-screen md:h-screen md:overflow-hidden bg-black">
+    <div className="flex flex-col min-h-screen md:h-screen md:overflow-hidden" style={{ background: '#0d0b06' }}>
       <Header
         user={user}
         onAddTask={() => setShowModal(true)}
@@ -39,10 +39,10 @@ export default function App() {
       />
 
       <div className="flex flex-1 md:min-h-0 flex-col md:flex-row">
-        {/* Left column — 40% — master task list */}
+        {/* Left column — task list */}
         <div
-          className="w-full md:w-2/5 md:flex-shrink-0 md:overflow-y-auto border-b md:border-b-0 md:border-r border-green-900/50"
-          style={{ background: '#0a0a08' }}
+          className="w-full md:w-2/5 md:flex-shrink-0 md:overflow-y-auto border-b md:border-b-0 md:border-r border-green-900/40"
+          style={{ background: '#18120a' }}
         >
           <TaskList
             tasks={tasks}
@@ -50,13 +50,14 @@ export default function App() {
             onSelectTask={setSelectedTaskId}
             onToggle={toggleTask}
             onDelete={deleteTask}
+            onUpdate={updateTask}
           />
         </div>
 
-        {/* Right column — 60% — weekly calendar */}
+        {/* Right column — calendar */}
         <div
           className="flex-1 md:overflow-y-auto"
-          style={{ background: '#06080a' }}
+          style={{ background: '#120f08' }}
         >
           <WeeklyCalendar
             tasks={tasks}
@@ -67,16 +68,16 @@ export default function App() {
         </div>
       </div>
 
-      <div className="fixed bottom-2 left-3 text-[10px] text-white pointer-events-none select-none z-50">
-        v1.1
-      </div>
-
       {showModal && (
         <AddTaskModal
           onClose={() => setShowModal(false)}
           onSave={handleSaveTask}
         />
       )}
+
+      <div className="fixed bottom-2 left-3 text-[10px] text-white pointer-events-none select-none z-50">
+        v1.3
+      </div>
     </div>
   )
 }

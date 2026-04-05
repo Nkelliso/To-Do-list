@@ -1,4 +1,4 @@
-import { useRef, useEffect } from 'react'
+import { useRef, useEffect, useState } from 'react'
 
 const PRIORITY_BADGE = {
   1: 'bg-gray-800 text-gray-500',
@@ -8,7 +8,6 @@ const PRIORITY_BADGE = {
   5: 'bg-red-950 text-red-400',
 }
 
-// Font size scales with priority
 const PRIORITY_TEXT_SIZE = {
   1: 'text-base',
   2: 'text-lg',
@@ -26,8 +25,11 @@ function formatTime(t) {
   return `${display}:${m}${ampm}`
 }
 
-export default function TaskRow({ task, isSelected, onSelect, onToggle, onDelete }) {
+export default function TaskRow({ task, isSelected, onSelect, onToggle, onDelete, onUpdate }) {
   const rowRef = useRef(null)
+  const inputRef = useRef(null)
+  const [editing, setEditing] = useState(false)
+  const [editName, setEditName] = useState(task.name)
 
   useEffect(() => {
     if (isSelected && rowRef.current) {
@@ -35,17 +37,49 @@ export default function TaskRow({ task, isSelected, onSelect, onToggle, onDelete
     }
   }, [isSelected])
 
+  // Focus and select all text when entering edit mode
+  useEffect(() => {
+    if (editing && inputRef.current) {
+      inputRef.current.focus()
+      inputRef.current.select()
+    }
+  }, [editing])
+
+  const startEdit = (e) => {
+    e.stopPropagation()
+    setEditName(task.name)
+    setEditing(true)
+  }
+
+  const saveEdit = () => {
+    const trimmed = editName.trim()
+    if (trimmed && trimmed !== task.name) {
+      onUpdate(task.id, { name: trimmed })
+    }
+    setEditing(false)
+  }
+
+  const cancelEdit = () => {
+    setEditName(task.name)
+    setEditing(false)
+  }
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter') saveEdit()
+    if (e.key === 'Escape') cancelEdit()
+  }
+
   const textSize = PRIORITY_TEXT_SIZE[task.priority] || PRIORITY_TEXT_SIZE[1]
 
   return (
     <div
       ref={rowRef}
-      onClick={onSelect}
+      onClick={editing ? undefined : onSelect}
       className={`flex items-center gap-3 px-3 py-2.5 rounded-lg border transition-all group cursor-pointer select-none ${
         isSelected
           ? 'border-green-700/60 bg-green-950/20'
           : 'border-transparent hover:border-green-900/50 hover:bg-white/[0.02]'
-      } ${task.completed ? 'opacity-40' : ''}`}
+      } ${task.completed ? 'opacity-50' : ''}`}
     >
       {/* Checkbox */}
       <input
@@ -56,14 +90,28 @@ export default function TaskRow({ task, isSelected, onSelect, onToggle, onDelete
         className="w-4 h-4 rounded accent-green-600 cursor-pointer flex-shrink-0"
       />
 
-      {/* Task name — font size scales with priority */}
-      <span
-        className={`flex-1 min-w-0 truncate font-medium leading-snug ${textSize} ${
-          task.completed ? 'line-through text-gray-600' : 'text-gray-200'
-        }`}
-      >
-        {task.name}
-      </span>
+      {/* Task name — tap to edit */}
+      {editing ? (
+        <input
+          ref={inputRef}
+          type="text"
+          value={editName}
+          onChange={(e) => setEditName(e.target.value)}
+          onBlur={saveEdit}
+          onKeyDown={handleKeyDown}
+          onClick={(e) => e.stopPropagation()}
+          className={`flex-1 min-w-0 bg-transparent border-b border-green-700 outline-none font-medium leading-snug ${textSize} text-gray-100 select-text`}
+        />
+      ) : (
+        <span
+          onClick={startEdit}
+          className={`flex-1 min-w-0 truncate font-medium leading-snug ${textSize} ${
+            task.completed ? 'line-through text-gray-600' : 'text-gray-200'
+          }`}
+        >
+          {task.name}
+        </span>
+      )}
 
       {/* Priority badge */}
       <span
@@ -80,10 +128,10 @@ export default function TaskRow({ task, isSelected, onSelect, onToggle, onDelete
         {task.timeDue && <span>{formatTime(task.timeDue)}</span>}
       </div>
 
-      {/* Delete button */}
+      {/* Delete — always visible on mobile, hover-only on desktop */}
       <button
         onClick={(e) => { e.stopPropagation(); onDelete(task.id) }}
-        className="opacity-0 group-hover:opacity-100 p-0.5 rounded text-gray-700 hover:text-red-400 hover:bg-red-950/50 transition-all cursor-pointer flex-shrink-0"
+        className="opacity-100 md:opacity-0 md:group-hover:opacity-100 p-0.5 rounded text-gray-600 hover:text-red-400 hover:bg-red-950/50 transition-all cursor-pointer flex-shrink-0"
         title="Delete task"
       >
         <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

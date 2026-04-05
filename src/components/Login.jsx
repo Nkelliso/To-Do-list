@@ -17,23 +17,24 @@ export default function Login({ onSignIn }) {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-black">
-      <div className="bg-gray-900 rounded-2xl border border-green-900 px-12 py-14 flex flex-col items-center gap-8 w-full max-w-sm">
+    <div className="min-h-screen flex items-center justify-center" style={{ background: '#0d0b06' }}>
+      <div className="rounded-2xl border border-green-900/50 px-12 py-14 flex flex-col items-center gap-8 w-full max-w-sm" style={{ background: '#1c1610' }}>
         <div className="flex flex-col items-center gap-2">
           <div className="w-10 h-10 rounded-xl bg-green-700 flex items-center justify-center mb-1">
             <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
             </svg>
           </div>
-          <h1 className="text-3xl font-bold tracking-tight text-gray-100">To-Do List</h1>
-          <p className="text-sm text-gray-500">Your personal weekly planner</p>
+          <h1 className="text-3xl font-bold tracking-tight text-amber-100/90">To-Do List</h1>
+          <p className="text-sm text-stone-500">Your personal weekly planner</p>
         </div>
 
         <div className="flex flex-col gap-3 w-full">
           <button
             onClick={handleSignIn}
             disabled={loading}
-            className="w-full flex items-center justify-center gap-3 px-4 py-2.5 border border-green-900 rounded-lg text-sm font-medium text-gray-300 bg-black hover:bg-gray-900 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full flex items-center justify-center gap-3 px-4 py-2.5 border border-green-900/60 rounded-lg text-sm font-medium text-stone-300 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed select-none"
+            style={{ background: '#120f08' }}
           >
             <svg className="w-5 h-5" viewBox="0 0 24 24">
               <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />

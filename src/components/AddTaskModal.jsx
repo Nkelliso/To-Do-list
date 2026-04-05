@@ -65,17 +65,18 @@ export default function AddTaskModal({ onClose, onSave }) {
       onClick={onClose}
     >
       <div
-        className="bg-gray-900 border border-green-900 rounded-xl shadow-xl w-full max-w-md mx-4 p-6 flex flex-col gap-5"
+        className="border border-green-900/50 rounded-xl shadow-xl w-full max-w-md mx-4 p-6 flex flex-col gap-5"
+        style={{ background: '#1c1610' }}
         onClick={(e) => e.stopPropagation()}
       >
         <div>
-          <h2 className="text-lg font-semibold text-gray-100">Add Task</h2>
-          <p className="text-xs text-gray-600 mt-0.5">Appears in both the task list and calendar once saved.</p>
+          <h2 className="text-lg font-semibold text-amber-100/90">Add Task</h2>
+          <p className="text-xs text-stone-600 mt-0.5">Appears in both the task list and calendar once saved.</p>
         </div>
 
         <div className="flex flex-col gap-4">
           <div className="flex flex-col gap-1">
-            <label className="text-sm font-medium text-gray-400">Task Name</label>
+            <label className="text-sm font-medium text-stone-400">Task Name</label>
             <input
               type="text"
               value={name}
@@ -83,18 +84,20 @@ export default function AddTaskModal({ onClose, onSave }) {
               onKeyDown={(e) => e.key === 'Enter' && handleSave()}
               placeholder="What needs to be done?"
               autoFocus
-              className="bg-black border border-green-900 text-gray-200 placeholder-gray-700 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-green-700 focus:border-transparent"
+              className="border border-green-900/50 text-stone-200 placeholder-stone-700 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-green-700 focus:border-transparent"
+              style={{ background: '#120f08' }}
             />
             {error && <p className="text-xs text-red-400">{error}</p>}
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div className="flex flex-col gap-1">
-              <label className="text-sm font-medium text-gray-400">Day Due</label>
+              <label className="text-sm font-medium text-stone-400">Day Due</label>
               <select
                 value={dayDue}
                 onChange={(e) => setDayDue(e.target.value)}
-                className="bg-black border border-green-900 text-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-green-700 focus:border-transparent"
+                className="border border-green-900/50 text-stone-200 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-green-700 focus:border-transparent"
+                style={{ background: '#120f08' }}
               >
                 {DAYS.map((d) => (
                   <option key={d} value={d}>{DAY_LABEL[d]}</option>
@@ -103,19 +106,20 @@ export default function AddTaskModal({ onClose, onSave }) {
             </div>
 
             <div className="flex flex-col gap-1">
-              <label className="text-sm font-medium text-gray-400">Time Due</label>
+              <label className="text-sm font-medium text-stone-400">Time Due</label>
               <input
                 type="time"
                 value={timeDue}
                 onChange={(e) => setTimeDue(e.target.value)}
-                className="bg-black border border-green-900 text-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-green-700 focus:border-transparent"
+                className="border border-green-900/50 text-stone-200 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-green-700 focus:border-transparent"
+                style={{ background: '#120f08' }}
               />
             </div>
           </div>
 
           <div className="flex flex-col gap-2">
             <div className="flex items-center justify-between">
-              <label className="text-sm font-medium text-gray-400">Priority</label>
+              <label className="text-sm font-medium text-stone-400">Priority</label>
               <span className={`text-sm font-semibold ${PRIORITY_COLORS[priority]}`}>
                 {priority} — {PRIORITY_LABELS[priority]}
               </span>

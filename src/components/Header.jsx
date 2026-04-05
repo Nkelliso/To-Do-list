@@ -23,7 +23,10 @@ export default function Header({ user, onAddTask, onSignOut }) {
   )
 
   return (
-    <header className="grid grid-cols-3 items-center border-b border-green-900/50 bg-black px-6 py-3 flex-shrink-0">
+    <header
+      className="grid grid-cols-3 items-center border-b border-green-900/40 px-6 py-3 flex-shrink-0"
+      style={{ background: '#0a0805' }}
+    >
       {/* Left: Add Task */}
       <div>
         <button
@@ -39,7 +42,7 @@ export default function Header({ user, onAddTask, onSignOut }) {
 
       {/* Center: App name */}
       <div className="flex justify-center">
-        <span className="text-sm font-semibold text-gray-200 tracking-wide">To-Do List</span>
+        <span className="text-sm font-semibold text-amber-100/80 tracking-wide">To-Do List</span>
       </div>
 
       {/* Right: User avatar */}
@@ -47,20 +50,21 @@ export default function Header({ user, onAddTask, onSignOut }) {
         <div className="relative" ref={menuRef}>
           <button
             onClick={() => setMenuOpen((o) => !o)}
-            className="cursor-pointer rounded-full focus:outline-none focus:ring-2 focus:ring-green-700 focus:ring-offset-2 focus:ring-offset-black select-none"
+            className="cursor-pointer rounded-full focus:outline-none focus:ring-2 focus:ring-green-700 focus:ring-offset-2 focus:ring-offset-[#0a0805] select-none"
           >
             {avatarContent}
           </button>
 
           {menuOpen && (
-            <div className="absolute right-0 top-10 bg-gray-900 border border-green-900 rounded-lg shadow-xl py-1 w-48 z-50">
-              <div className="px-3 py-2 border-b border-green-900">
-                <p className="text-xs font-medium text-gray-200 truncate">{user?.displayName}</p>
-                <p className="text-xs text-gray-500 truncate">{user?.email}</p>
+            <div className="absolute right-0 top-10 border border-green-900/60 rounded-lg shadow-xl py-1 w-48 z-50" style={{ background: '#1c1610' }}>
+              <div className="px-3 py-2 border-b border-green-900/40">
+                <p className="text-xs font-medium text-amber-100/70 truncate">{user?.displayName}</p>
+                <p className="text-xs text-stone-500 truncate">{user?.email}</p>
               </div>
               <button
                 onClick={() => { setMenuOpen(false); onSignOut() }}
-                className="w-full text-left px-3 py-2 text-sm text-gray-400 hover:bg-black hover:text-gray-200 transition-colors cursor-pointer"
+                className="w-full text-left px-3 py-2 text-sm text-stone-400 hover:text-amber-100/80 transition-colors cursor-pointer select-none"
+                style={{ ':hover': { background: '#0a0805' } }}
               >
                 Sign out
               </button>
