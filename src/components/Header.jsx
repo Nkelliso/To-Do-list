@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 
-export default function Header({ user, onAddTask, onSignOut }) {
+export default function Header({ user, onAddTask, onSignOut, page, onPageChange }) {
   const [menuOpen, setMenuOpen] = useState(false)
   const menuRef = useRef(null)
 
@@ -27,22 +27,43 @@ export default function Header({ user, onAddTask, onSignOut }) {
       className="grid grid-cols-3 items-center border-b border-green-900/40 px-6 py-3 flex-shrink-0"
       style={{ background: '#0a0805' }}
     >
-      {/* Left: Add Task */}
+      {/* Left: Add Task (hidden on Ideas page) */}
       <div>
-        <button
-          onClick={onAddTask}
-          className="flex items-center gap-2 px-4 py-2 bg-green-700 hover:bg-green-600 text-white text-sm font-medium rounded-lg transition-colors cursor-pointer select-none"
-        >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-          </svg>
-          Add Task
-        </button>
+        {page !== 'ideas' && (
+          <button
+            onClick={onAddTask}
+            className="flex items-center gap-2 px-4 py-2 bg-green-700 hover:bg-green-600 text-white text-sm font-medium rounded-lg transition-colors cursor-pointer select-none"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+            Add Task
+          </button>
+        )}
       </div>
 
-      {/* Center: App name */}
-      <div className="flex justify-center">
-        <span className="text-sm font-semibold text-amber-100/80 tracking-wide">To-Do List</span>
+      {/* Center: Nav */}
+      <div className="flex justify-center items-center gap-5">
+        <button
+          onClick={() => onPageChange('todo')}
+          className={`text-sm font-semibold tracking-wide transition-colors cursor-pointer select-none pb-0.5 ${
+            page === 'todo'
+              ? 'text-amber-100/90 border-b border-amber-100/60'
+              : 'text-amber-100/40 hover:text-amber-100/60'
+          }`}
+        >
+          To-Do List
+        </button>
+        <button
+          onClick={() => onPageChange('ideas')}
+          className={`text-sm font-semibold tracking-wide transition-colors cursor-pointer select-none pb-0.5 ${
+            page === 'ideas'
+              ? 'text-amber-100/90 border-b border-amber-100/60'
+              : 'text-amber-100/40 hover:text-amber-100/60'
+          }`}
+        >
+          Ideas
+        </button>
       </div>
 
       {/* Right: User avatar */}
