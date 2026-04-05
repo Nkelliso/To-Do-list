@@ -17,6 +17,8 @@ body,
   min-height: -webkit-fill-available;
   overflow-x: hidden;
   background-color: #000000;
+  /* Prevents rubber-band bounce revealing white behind the app on iPhone */
+  overscroll-behavior: none;
 }
 
 /* Safe area insets for notch / home bar */
