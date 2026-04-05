@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 
-export default function Header({ user, onAddTask, onSignOut, page, onPageChange }) {
+export default function Header({ user, onAddTask, onSignOut, page, onPageChange, onBulkImport }) {
   const [menuOpen, setMenuOpen] = useState(false)
   const menuRef = useRef(null)
 
@@ -66,8 +66,19 @@ export default function Header({ user, onAddTask, onSignOut, page, onPageChange 
         </button>
       </div>
 
-      {/* Right: User avatar */}
-      <div className="flex justify-end">
+      {/* Right: Bulk import icon + User avatar */}
+      <div className="flex justify-end items-center gap-2">
+        {page !== 'ideas' && (
+          <button
+            onClick={onBulkImport}
+            title="Bulk import tasks"
+            className="w-8 h-8 flex items-center justify-center rounded-full text-stone-600 hover:text-stone-300 transition-colors cursor-pointer select-none"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M9 13h6m-3-3v6m-9 1V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
+            </svg>
+          </button>
+        )}
         <div className="relative" ref={menuRef}>
           <button
             onClick={() => setMenuOpen((o) => !o)}

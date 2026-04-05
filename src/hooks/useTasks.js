@@ -10,6 +10,7 @@ import {
   doc,
   serverTimestamp,
   deleteField,
+  writeBatch,
 } from 'firebase/firestore'
 import { db } from '../firebase'
 
@@ -37,13 +38,29 @@ export function useTasks(uid) {
   const toggleTask = (id, currentCompleted) =>
     updateDoc(doc(db, 'tasks', id), {
       completed: !currentCompleted,
-      // Record when completed; clear it when unchecking
       completedAt: currentCompleted ? deleteField() : serverTimestamp(),
+      completedDate: currentCompleted
+        ? deleteField()
+        : new Date().toISOString().split('T')[0],
     })
 
   const deleteTask = (id) => deleteDoc(doc(db, 'tasks', id))
 
   const updateTask = (id, fields) => updateDoc(doc(db, 'tasks', id), fields)
 
-  return { tasks, addTask, toggleTask, deleteTask, updateTask }
+  const bulkAddTasks = async (tasksData) => {
+    const batch = writeBatch(db)
+    tasksData.forEach((fields) => {
+      const ref = doc(collection(db, 'tasks'))
+      batch.set(ref, {
+        ...fields,
+        uid,
+        completed: false,
+        createdAt: serverTimestamp(),
+      })
+    })
+    return batch.commit()
+  }
+
+  return { tasks, addTask, toggleTask, deleteTask, updateTask, bulkAddTasks }
 }

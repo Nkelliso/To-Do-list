@@ -1,10 +1,21 @@
 import { useEffect, useRef, useState, forwardRef, useImperativeHandle } from 'react'
 
+const FONT_SIZES = { small: 13, medium: 16, large: 20 }
+
 const IdeasPage = forwardRef(function IdeasPage({ content, onChange }, ref) {
   const editorRef = useRef(null)
   const debounceRef = useRef(null)
   const [saved, setSaved] = useState(false)
   const initialized = useRef(false)
+  const [fontSize, setFontSize] = useState(() => {
+    const saved = localStorage.getItem('taskflow_ideas_fontsize')
+    return saved && FONT_SIZES[saved] ? saved : 'medium'
+  })
+
+  const changeFontSize = (size) => {
+    setFontSize(size)
+    localStorage.setItem('taskflow_ideas_fontsize', size)
+  }
 
   // Set HTML once on mount only
   useEffect(() => {
@@ -112,6 +123,24 @@ const IdeasPage = forwardRef(function IdeasPage({ content, onChange }, ref) {
           <span className="text-xs leading-none">A</span>
           <span className="text-[9px] align-super leading-none ml-px">−</span>
         </Btn>
+
+        {/* Font size S/M/L — right-aligned */}
+        <div className="ml-auto flex items-center gap-3">
+          {[['small', 'S'], ['medium', 'M'], ['large', 'L']].map(([size, label]) => (
+            <button
+              key={size}
+              onMouseDown={(e) => { e.preventDefault(); changeFontSize(size) }}
+              title={`${size.charAt(0).toUpperCase() + size.slice(1)} text`}
+              className={`text-xs cursor-pointer select-none transition-colors pb-px ${
+                fontSize === size
+                  ? 'text-amber-100/80 border-b border-amber-100/50'
+                  : 'text-stone-600 hover:text-stone-400'
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* ── Editor ── */}
@@ -131,7 +160,7 @@ const IdeasPage = forwardRef(function IdeasPage({ content, onChange }, ref) {
           className="ideas-editor flex-1 overflow-y-auto px-6 py-4 text-stone-300 text-sm leading-relaxed outline-none"
           onInput={triggerSave}
           onKeyDown={handleKeyDown}
-          style={{ minHeight: 0 }}
+          style={{ minHeight: 0, fontSize: FONT_SIZES[fontSize] }}
         />
       </div>
     </div>

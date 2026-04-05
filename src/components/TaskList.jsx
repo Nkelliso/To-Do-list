@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import TaskRow from './TaskRow'
 
 const DAY_ORDER = { M: 0, Tu: 1, W: 2, Th: 3, F: 4, Wknd: 5 }
@@ -7,34 +7,34 @@ const ALL_DAYS = ['M', 'Tu', 'W', 'Th', 'F', 'Wknd']
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
 
-function isSameDay(a, b) {
-  return (
-    a.getFullYear() === b.getFullYear() &&
-    a.getMonth() === b.getMonth() &&
-    a.getDate() === b.getDate()
-  )
+function getToday() {
+  return new Date().toISOString().split('T')[0]
 }
 
-// Returns true if the Firestore timestamp is from today
-function isCompletedToday(timestamp) {
-  if (!timestamp) return false
-  try {
-    const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp)
-    return isSameDay(date, new Date())
-  } catch {
-    return false
+function formatCompletedDate(task) {
+  // Prefer completedDate string (YYYY-MM-DD) for reliable display
+  if (task.completedDate) {
+    const today = getToday()
+    const d = new Date(Date.now() - 86400000)
+    const yesterday = d.toISOString().split('T')[0]
+    if (task.completedDate === today) return 'Today'
+    if (task.completedDate === yesterday) return 'Yesterday'
+    const parsed = new Date(task.completedDate + 'T12:00:00')
+    return parsed.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
   }
-}
-
-function formatCompletedDate(timestamp) {
-  if (!timestamp) return ''
+  // Fallback for older tasks that only have completedAt timestamp
+  if (!task.completedAt) return ''
   try {
-    const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp)
+    const date = task.completedAt.toDate ? task.completedAt.toDate() : new Date(task.completedAt)
     const now = new Date()
     const yesterday = new Date(now)
     yesterday.setDate(yesterday.getDate() - 1)
-    if (isSameDay(date, now)) return 'Today'
-    if (isSameDay(date, yesterday)) return 'Yesterday'
+    const sameDay = (a, b) =>
+      a.getFullYear() === b.getFullYear() &&
+      a.getMonth() === b.getMonth() &&
+      a.getDate() === b.getDate()
+    if (sameDay(date, now)) return 'Today'
+    if (sameDay(date, yesterday)) return 'Yesterday'
     return date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
   } catch {
     return ''
@@ -70,7 +70,7 @@ function sortByDayTime(tasks) {
 // ── Completed task row ───────────────────────────────────────────────────────
 
 function CompletedRow({ task, onToggle, onDelete }) {
-  const completedLabel = formatCompletedDate(task.completedAt)
+  const completedLabel = formatCompletedDate(task)
   const dueLabel = DAY_LABELS[task.dayDue] || task.dayDue
 
   return (
@@ -115,15 +115,22 @@ function CompletedRow({ task, onToggle, onDelete }) {
 
 export default function TaskList({ tasks, selectedTaskId, onSelectTask, onToggle, onDelete, onUpdate }) {
   const [activeTab, setActiveTab] = useState('todo')
+  const today = getToday()
 
-  // To Do: uncompleted tasks + tasks completed TODAY (stay until midnight)
+  // Record today's date in localStorage so we can detect when a new day starts
+  useEffect(() => {
+    const last = localStorage.getItem('taskflow_last_reset')
+    if (last !== today) localStorage.setItem('taskflow_last_reset', today)
+  }, [today])
+
+  // To Do: uncompleted tasks + tasks completed TODAY (stay all day until midnight)
   const activeTasks = sortByPriorityDayTime(
-    tasks.filter(t => !t.completed || isCompletedToday(t.completedAt))
+    tasks.filter(t => !t.completed || t.completedDate === today)
   )
 
-  // Completed: tasks completed BEFORE today (midnight has passed)
+  // Completed: tasks completed on a PREVIOUS day
   const archivedTasks = sortByDayTime(
-    tasks.filter(t => t.completed && !isCompletedToday(t.completedAt))
+    tasks.filter(t => t.completed && t.completedDate !== today)
   )
 
   // Group archived tasks by dayDue

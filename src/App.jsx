@@ -7,15 +7,17 @@ import Header from './components/Header'
 import TaskList from './components/TaskList'
 import WeeklyCalendar from './components/WeeklyCalendar'
 import AddTaskModal from './components/AddTaskModal'
+import BulkImportModal from './components/BulkImportModal'
 import IdeasPage from './components/IdeasPage'
 
 export default function App() {
   const { user, signIn, signOut } = useAuth()
-  const { tasks, addTask, toggleTask, deleteTask, updateTask } = useTasks(user?.uid)
+  const { tasks, addTask, toggleTask, deleteTask, updateTask, bulkAddTasks } = useTasks(user?.uid)
   const { content, saveContent, loaded } = useNotes(user?.uid)
   const [showModal, setShowModal] = useState(false)
   const [selectedTaskId, setSelectedTaskId] = useState(null)
   const [page, setPage] = useState('todo')
+  const [showBulkImport, setShowBulkImport] = useState(false)
   const ideasRef = useRef(null)
 
   const handlePageChange = (newPage) => {
@@ -50,6 +52,7 @@ export default function App() {
         onSignOut={signOut}
         page={page}
         onPageChange={handlePageChange}
+        onBulkImport={() => setShowBulkImport(true)}
       />
 
       {/* Ideas page — always mounted so editor DOM is preserved */}
@@ -98,6 +101,13 @@ export default function App() {
         <AddTaskModal
           onClose={() => setShowModal(false)}
           onSave={handleSaveTask}
+        />
+      )}
+
+      {showBulkImport && (
+        <BulkImportModal
+          onClose={() => setShowBulkImport(false)}
+          onImport={bulkAddTasks}
         />
       )}
 
