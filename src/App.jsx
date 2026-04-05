@@ -45,7 +45,7 @@ export default function App() {
       />
 
       {page === 'ideas' ? (
-        <div className="flex flex-1 md:min-h-0">
+        <div className="flex flex-col flex-1 min-h-0 w-full">
           {loaded && (
             <IdeasPage
               content={content}

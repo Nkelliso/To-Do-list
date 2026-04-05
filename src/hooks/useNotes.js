@@ -8,10 +8,12 @@ export function useNotes(uid) {
 
   useEffect(() => {
     if (!uid) return
-    getDoc(doc(db, 'users', uid, 'notes', 'ideas')).then((snap) => {
-      if (snap.exists()) setContent(snap.data().content ?? '')
-      setLoaded(true)
-    })
+    getDoc(doc(db, 'users', uid, 'notes', 'ideas'))
+      .then((snap) => {
+        if (snap.exists()) setContent(snap.data().content ?? '')
+      })
+      .catch(() => {})
+      .finally(() => setLoaded(true))
   }, [uid])
 
   const saveContent = (text) =>
