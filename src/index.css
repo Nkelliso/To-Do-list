@@ -24,3 +24,10 @@ body,
   padding-top: env(safe-area-inset-top);
   padding-bottom: env(safe-area-inset-bottom);
 }
+
+/* Ideas editor placeholder */
+.ideas-editor:empty::before {
+  content: attr(data-placeholder);
+  color: #44403c;
+  pointer-events: none;
+}

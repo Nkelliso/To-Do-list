@@ -9,6 +9,7 @@ import {
   deleteDoc,
   doc,
   serverTimestamp,
+  deleteField,
 } from 'firebase/firestore'
 import { db } from '../firebase'
 
@@ -34,7 +35,11 @@ export function useTasks(uid) {
     })
 
   const toggleTask = (id, currentCompleted) =>
-    updateDoc(doc(db, 'tasks', id), { completed: !currentCompleted })
+    updateDoc(doc(db, 'tasks', id), {
+      completed: !currentCompleted,
+      // Record when completed; clear it when unchecking
+      completedAt: currentCompleted ? deleteField() : serverTimestamp(),
+    })
 
   const deleteTask = (id) => deleteDoc(doc(db, 'tasks', id))
 

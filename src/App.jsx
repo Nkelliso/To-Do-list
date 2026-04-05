@@ -12,7 +12,7 @@ import IdeasPage from './components/IdeasPage'
 export default function App() {
   const { user, signIn, signOut } = useAuth()
   const { tasks, addTask, toggleTask, deleteTask, updateTask } = useTasks(user?.uid)
-  const { content, setContent, saveContent, loaded } = useNotes(user?.uid)
+  const { content, saveContent, loaded } = useNotes(user?.uid)
   const [showModal, setShowModal] = useState(false)
   const [selectedTaskId, setSelectedTaskId] = useState(null)
   const [page, setPage] = useState('todo')
@@ -49,7 +49,7 @@ export default function App() {
           {loaded && (
             <IdeasPage
               content={content}
-              onChange={(val) => { setContent(val); saveContent(val) }}
+              onChange={saveContent}
             />
           )}
         </div>
