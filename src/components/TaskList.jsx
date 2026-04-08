@@ -170,7 +170,7 @@ export default function TaskList({ tasks, selectedTaskId, onSelectTask, onToggle
   return (
     <div className="p-4">
       {/* Tab switcher */}
-      <div className="flex gap-1 mb-4 p-1 rounded-lg" style={{ background: '#3e2e20' }}>
+      <div className="flex gap-1 mb-4 p-1 rounded-lg" style={{ background: '#3e2e38' }}>
         {[['todo', 'To Do', activeTasks.length], ['completed', 'Completed', archivedTasks.length]].map(([tab, label, count]) => (
           <button
             key={tab}

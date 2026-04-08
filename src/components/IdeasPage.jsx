@@ -96,12 +96,12 @@ const IdeasPage = forwardRef(function IdeasPage({ content, onChange }, ref) {
   }
 
   return (
-    <div className="flex flex-col flex-1 min-h-0" style={{ background: '#302010' }}>
+    <div className="flex flex-col flex-1 min-h-0" style={{ background: '#30202c' }}>
 
       {/* ── Toolbar ── */}
       <div
         className="flex items-center gap-0.5 px-4 py-2 border-b border-green-900/30 flex-shrink-0"
-        style={{ background: '#382818' }}
+        style={{ background: '#382834' }}
       >
         <Btn onMouseDown={() => fmt('bold')} title="Bold">
           <span className="font-bold">B</span>

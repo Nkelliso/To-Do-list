@@ -76,7 +76,7 @@ export default function BulkImportModal({ onClose, onImport }) {
     >
       <div
         className="border border-green-900/50 rounded-xl shadow-xl w-full max-w-lg mx-4 p-6 flex flex-col gap-5"
-        style={{ background: '#3e2e20' }}
+        style={{ background: '#3e2e38' }}
         onClick={e => e.stopPropagation()}
       >
         <div>
@@ -85,7 +85,7 @@ export default function BulkImportModal({ onClose, onImport }) {
         </div>
 
         {/* Format guide */}
-        <div className="rounded-lg px-4 py-3 text-xs space-y-1.5" style={{ background: '#302010' }}>
+        <div className="rounded-lg px-4 py-3 text-xs space-y-1.5" style={{ background: '#30202c' }}>
           <p className="text-stone-500 font-medium">Format — one task per line:</p>
           <p className="text-stone-600 font-mono">Task Name, Day, Time, Priority</p>
           <div className="h-px bg-green-900/20 my-1" />
@@ -107,7 +107,7 @@ export default function BulkImportModal({ onClose, onImport }) {
           placeholder="Paste your tasks here, one per line..."
           rows={6}
           className="border border-green-900/50 text-stone-300 placeholder-stone-700 rounded-lg px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-green-700 focus:border-transparent resize-none font-mono"
-          style={{ background: '#302010' }}
+          style={{ background: '#30202c' }}
         />
 
         {/* Status message */}

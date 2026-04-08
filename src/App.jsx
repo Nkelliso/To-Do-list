@@ -74,7 +74,7 @@ export default function App() {
 
   if (user === undefined) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: '#2d2418' }}>
+      <div className="min-h-screen flex items-center justify-center" style={{ background: '#2d2438' }}>
         <div className="w-8 h-8 border-2 border-green-600 border-t-transparent rounded-full animate-spin" />
       </div>
     )
@@ -90,7 +90,7 @@ export default function App() {
   }
 
   return (
-    <div className="flex flex-col min-h-screen md:h-screen md:overflow-hidden" style={{ background: '#2d2418' }}>
+    <div className="flex flex-col min-h-screen md:h-screen md:overflow-hidden" style={{ background: '#2d2438' }}>
       <Header
         user={user}
         onAddTask={() => setShowModal(true)}
@@ -116,7 +116,7 @@ export default function App() {
         {/* Left column — task list */}
         <div
           className="w-full md:w-2/5 md:flex-shrink-0 md:overflow-y-auto border-b md:border-b-0 md:border-r border-green-900/40"
-          style={{ background: '#382818' }}
+          style={{ background: '#382834' }}
         >
           <TaskList
             tasks={tasks}
@@ -131,7 +131,7 @@ export default function App() {
         {/* Right column — calendar */}
         <div
           className="flex-1 md:overflow-y-auto"
-          style={{ background: '#302010' }}
+          style={{ background: '#30202c' }}
         >
           <WeeklyCalendar
             tasks={tasks}

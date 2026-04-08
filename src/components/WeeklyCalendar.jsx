@@ -296,7 +296,7 @@ export default function WeeklyCalendar({ tasks, selectedTaskId, onSelectTask, on
     <div style={{ cursor: isDragging ? 'grabbing' : 'default' }}>
 
       {/* ── Sticky header (shared by both views) ── */}
-      <div className="sticky top-0 z-20" style={{ background: '#302010' }}>
+      <div className="sticky top-0 z-20" style={{ background: '#30202c' }}>
         <div className="flex items-center gap-3 px-4 pt-4 pb-2">
           <h2 className="text-xs font-semibold text-gray-600 tracking-widest uppercase select-none">
             This Week

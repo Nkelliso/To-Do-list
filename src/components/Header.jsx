@@ -25,7 +25,7 @@ export default function Header({ user, onAddTask, onSignOut, page, onPageChange,
   return (
     <header
       className="grid grid-cols-3 items-center border-b border-green-900/40 px-6 py-3 flex-shrink-0"
-      style={{ background: '#261b10' }}
+      style={{ background: '#261b2e' }}
     >
       {/* Left: Add Task (hidden on Ideas page) */}
       <div>
@@ -82,13 +82,13 @@ export default function Header({ user, onAddTask, onSignOut, page, onPageChange,
         <div className="relative" ref={menuRef}>
           <button
             onClick={() => setMenuOpen((o) => !o)}
-            className="cursor-pointer rounded-full focus:outline-none focus:ring-2 focus:ring-green-700 focus:ring-offset-2 focus:ring-offset-[#261b10] select-none"
+            className="cursor-pointer rounded-full focus:outline-none focus:ring-2 focus:ring-green-700 focus:ring-offset-2 focus:ring-offset-[#261b2e] select-none"
           >
             {avatarContent}
           </button>
 
           {menuOpen && (
-            <div className="absolute right-0 top-10 border border-green-900/60 rounded-lg shadow-xl py-1 w-48 z-50" style={{ background: '#3e2e20' }}>
+            <div className="absolute right-0 top-10 border border-green-900/60 rounded-lg shadow-xl py-1 w-48 z-50" style={{ background: '#3e2e38' }}>
               <div className="px-3 py-2 border-b border-green-900/40">
                 <p className="text-xs font-medium text-amber-100/70 truncate">{user?.displayName}</p>
                 <p className="text-xs text-stone-500 truncate">{user?.email}</p>
@@ -96,7 +96,7 @@ export default function Header({ user, onAddTask, onSignOut, page, onPageChange,
               <button
                 onClick={() => { setMenuOpen(false); onSignOut() }}
                 className="w-full text-left px-3 py-2 text-sm text-stone-400 hover:text-amber-100/80 transition-colors cursor-pointer select-none"
-                style={{ ':hover': { background: '#261b10' } }}
+                style={{ ':hover': { background: '#261b2e' } }}
               >
                 Sign out
               </button>
