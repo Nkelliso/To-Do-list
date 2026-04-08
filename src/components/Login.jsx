@@ -17,8 +17,8 @@ export default function Login({ onSignIn }) {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center" style={{ background: '#0d0b06' }}>
-      <div className="rounded-2xl border border-green-900/50 px-12 py-14 flex flex-col items-center gap-8 w-full max-w-sm" style={{ background: '#1c1610' }}>
+    <div className="min-h-screen flex items-center justify-center" style={{ background: '#2d2418' }}>
+      <div className="rounded-2xl border border-green-900/50 px-12 py-14 flex flex-col items-center gap-8 w-full max-w-sm" style={{ background: '#3e2e20' }}>
         <div className="flex flex-col items-center gap-2">
           <div className="w-10 h-10 rounded-xl bg-green-700 flex items-center justify-center mb-1">
             <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -34,7 +34,7 @@ export default function Login({ onSignIn }) {
             onClick={handleSignIn}
             disabled={loading}
             className="w-full flex items-center justify-center gap-3 px-4 py-2.5 border border-green-900/60 rounded-lg text-sm font-medium text-stone-300 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed select-none"
-            style={{ background: '#120f08' }}
+            style={{ background: '#302010' }}
           >
             <svg className="w-5 h-5" viewBox="0 0 24 24">
               <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />

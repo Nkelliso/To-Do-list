@@ -66,7 +66,7 @@ export default function AddTaskModal({ onClose, onSave }) {
     >
       <div
         className="border border-green-900/50 rounded-xl shadow-xl w-full max-w-md mx-4 p-6 flex flex-col gap-5"
-        style={{ background: '#1c1610' }}
+        style={{ background: '#3e2e20' }}
         onClick={(e) => e.stopPropagation()}
       >
         <div>
@@ -85,7 +85,7 @@ export default function AddTaskModal({ onClose, onSave }) {
               placeholder="What needs to be done?"
               autoFocus
               className="border border-green-900/50 text-stone-200 placeholder-stone-700 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-green-700 focus:border-transparent"
-              style={{ background: '#120f08' }}
+              style={{ background: '#302010' }}
             />
             {error && <p className="text-xs text-red-400">{error}</p>}
           </div>
@@ -97,7 +97,7 @@ export default function AddTaskModal({ onClose, onSave }) {
                 value={dayDue}
                 onChange={(e) => setDayDue(e.target.value)}
                 className="border border-green-900/50 text-stone-200 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-green-700 focus:border-transparent"
-                style={{ background: '#120f08' }}
+                style={{ background: '#302010' }}
               >
                 {DAYS.map((d) => (
                   <option key={d} value={d}>{DAY_LABEL[d]}</option>
@@ -112,7 +112,7 @@ export default function AddTaskModal({ onClose, onSave }) {
                 value={timeDue}
                 onChange={(e) => setTimeDue(e.target.value)}
                 className="border border-green-900/50 text-stone-200 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-green-700 focus:border-transparent"
-                style={{ background: '#120f08' }}
+                style={{ background: '#302010' }}
               />
             </div>
           </div>

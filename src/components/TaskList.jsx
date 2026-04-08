@@ -41,6 +41,14 @@ function formatCompletedDate(task) {
   }
 }
 
+function formatWeekLabel(weekOf) {
+  const start = new Date(weekOf + 'T12:00:00')
+  const end = new Date(start)
+  end.setDate(end.getDate() + 6)
+  const fmt = (d) => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+  return `${fmt(start)} – ${fmt(end)}`
+}
+
 function formatTime(t) {
   if (!t) return ''
   const [h, m] = t.split(':')
@@ -115,6 +123,7 @@ function CompletedRow({ task, onToggle, onDelete }) {
 
 export default function TaskList({ tasks, selectedTaskId, onSelectTask, onToggle, onDelete, onUpdate }) {
   const [activeTab, setActiveTab] = useState('todo')
+  const [showPastTasks, setShowPastTasks] = useState(false)
   const today = getToday()
 
   // Record today's date in localStorage so we can detect when a new day starts
@@ -125,13 +134,22 @@ export default function TaskList({ tasks, selectedTaskId, onSelectTask, onToggle
 
   // To Do: uncompleted tasks + tasks completed TODAY (stay all day until midnight)
   const activeTasks = sortByPriorityDayTime(
-    tasks.filter(t => !t.completed || t.completedDate === today)
+    tasks.filter(t => !t.archived && (!t.completed || t.completedDate === today))
   )
 
-  // Completed: tasks completed on a PREVIOUS day
+  // Completed tab: completed on a previous day, NOT yet moved to archive
   const archivedTasks = sortByDayTime(
-    tasks.filter(t => t.completed && t.completedDate !== today)
+    tasks.filter(t => !t.archived && t.completed && t.completedDate !== today)
   )
+
+  // Past Tasks folder: tasks that have been archived (moved there on Sunday)
+  const pastTasks = tasks.filter(t => t.archived)
+  const pastByWeek = {}
+  pastTasks.forEach(t => {
+    if (!pastByWeek[t.weekOf]) pastByWeek[t.weekOf] = []
+    pastByWeek[t.weekOf].push(t)
+  })
+  const pastWeeks = Object.keys(pastByWeek).sort().reverse()
 
   // Group archived tasks by dayDue
   const archivedByDay = {}
@@ -152,7 +170,7 @@ export default function TaskList({ tasks, selectedTaskId, onSelectTask, onToggle
   return (
     <div className="p-4">
       {/* Tab switcher */}
-      <div className="flex gap-1 mb-4 p-1 rounded-lg" style={{ background: '#1c1610' }}>
+      <div className="flex gap-1 mb-4 p-1 rounded-lg" style={{ background: '#3e2e20' }}>
         {[['todo', 'To Do', activeTasks.length], ['completed', 'Completed', archivedTasks.length]].map(([tab, label, count]) => (
           <button
             key={tab}
@@ -224,6 +242,53 @@ export default function TaskList({ tasks, selectedTaskId, onSelectTask, onToggle
             })}
           </div>
         )
+      )}
+
+      {/* ── Past Tasks folder (bottom of Completed tab) ── */}
+      {activeTab === 'completed' && pastWeeks.length > 0 && (
+        <div className="mt-6 border-t border-stone-800 pt-4">
+          <button
+            onClick={() => setShowPastTasks(o => !o)}
+            className="flex items-center gap-2 w-full px-1 mb-3 text-left cursor-pointer select-none group"
+          >
+            <svg
+              className={`w-3 h-3 text-stone-600 transition-transform flex-shrink-0 ${showPastTasks ? 'rotate-90' : ''}`}
+              fill="none" stroke="currentColor" viewBox="0 0 24 24"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+            <span className="text-[10px] font-semibold text-stone-600 tracking-widest uppercase group-hover:text-stone-400 transition-colors">
+              Past Tasks
+            </span>
+            <span className="text-[10px] text-stone-700 ml-0.5">({pastTasks.length})</span>
+            <div className="flex-1 h-px bg-stone-800" />
+          </button>
+
+          {showPastTasks && (
+            <div>
+              {pastWeeks.map(weekOf => (
+                <div key={weekOf} className="mb-5">
+                  <div className="flex items-center gap-2 mb-1.5 px-1">
+                    <span className="text-[10px] font-semibold text-stone-700 tracking-wide">
+                      {formatWeekLabel(weekOf)}
+                    </span>
+                    <div className="flex-1 h-px bg-stone-900" />
+                  </div>
+                  <div className="flex flex-col gap-0.5">
+                    {sortByDayTime(pastByWeek[weekOf]).map(task => (
+                      <CompletedRow
+                        key={task.id}
+                        task={task}
+                        onToggle={onToggle}
+                        onDelete={onDelete}
+                      />
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       )}
     </div>
   )

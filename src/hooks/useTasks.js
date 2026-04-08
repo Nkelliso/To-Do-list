@@ -62,5 +62,28 @@ export function useTasks(uid) {
     return batch.commit()
   }
 
-  return { tasks, addTask, toggleTask, deleteTask, updateTask, bulkAddTasks }
+  // Archive a set of completed tasks into weekly folders
+  const archiveTasks = async (updates) => {
+    // updates: [{ id, weekOf }]
+    if (!updates.length) return
+    const batch = writeBatch(db)
+    updates.forEach(({ id, weekOf }) => {
+      batch.update(doc(db, 'tasks', id), {
+        archived: true,
+        weekOf,
+        archivedAt: new Date().toISOString(),
+      })
+    })
+    return batch.commit()
+  }
+
+  // Delete a list of task IDs (used to clean up old archives)
+  const deleteTasks = async (ids) => {
+    if (!ids.length) return
+    const batch = writeBatch(db)
+    ids.forEach((id) => batch.delete(doc(db, 'tasks', id)))
+    return batch.commit()
+  }
+
+  return { tasks, addTask, toggleTask, deleteTask, updateTask, bulkAddTasks, archiveTasks, deleteTasks }
 }

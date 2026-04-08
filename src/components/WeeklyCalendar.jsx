@@ -296,7 +296,7 @@ export default function WeeklyCalendar({ tasks, selectedTaskId, onSelectTask, on
     <div style={{ cursor: isDragging ? 'grabbing' : 'default' }}>
 
       {/* ── Sticky header (shared by both views) ── */}
-      <div className="sticky top-0 z-20" style={{ background: '#120f08' }}>
+      <div className="sticky top-0 z-20" style={{ background: '#302010' }}>
         <div className="flex items-center gap-3 px-4 pt-4 pb-2">
           <h2 className="text-xs font-semibold text-gray-600 tracking-widest uppercase select-none">
             This Week
@@ -312,7 +312,7 @@ export default function WeeklyCalendar({ tasks, selectedTaskId, onSelectTask, on
         </div>
 
         {/* Day column headers — desktop only */}
-        <div className="hidden md:flex border-b border-green-900/40">
+        <div className="hidden md:flex border-b border-stone-600/30">
           <div className="w-10 flex-shrink-0" />
           {ALL_COLUMNS.map(({ key, label }) => {
             const isToday = key === todayKey
@@ -350,14 +350,14 @@ export default function WeeklyCalendar({ tasks, selectedTaskId, onSelectTask, on
         <>
           {/* Unscheduled strip */}
           {hasAnyUnscheduled && (
-            <div className="flex border-b border-green-900/20">
+            <div className="flex border-b border-stone-600/25">
               <div className="w-10 flex-shrink-0 flex items-center justify-center">
                 <span className="text-[9px] text-gray-700">—</span>
               </div>
               {ALL_COLUMNS.map(({ key }) => (
                 <div
                   key={key}
-                  className={`flex-1 p-1 flex flex-col gap-0.5 min-h-8 border-l border-green-900/20 ${
+                  className={`flex-1 p-1 flex flex-col gap-0.5 min-h-8 border-l border-stone-600/25 ${
                     key === todayKey ? 'bg-green-950/10' : ''
                   }`}
                 >
@@ -381,7 +381,7 @@ export default function WeeklyCalendar({ tasks, selectedTaskId, onSelectTask, on
               {HOUR_LINES.map(h => (
                 <div
                   key={h}
-                  className="absolute right-1.5 text-[10px] text-gray-700 leading-none tabular-nums"
+                  className="absolute right-1.5 text-[10px] text-stone-500 leading-none tabular-nums"
                   style={{ top: (h - START_HOUR) * HOUR_HEIGHT - 6 }}
                 >
                   {formatHourLabel(h)}
@@ -395,14 +395,14 @@ export default function WeeklyCalendar({ tasks, selectedTaskId, onSelectTask, on
               return (
                 <div
                   key={key}
-                  className={`flex-1 relative border-l border-green-900/20 ${
+                  className={`flex-1 relative border-l border-stone-600/25 ${
                     isToday ? 'bg-green-950/[0.07]' : ''
                   }`}
                 >
                   {HOUR_LINES.map(h => (
                     <div
                       key={h}
-                      className="absolute w-full border-t border-green-900/15"
+                      className="absolute w-full border-t border-stone-600/35"
                       style={{ top: (h - START_HOUR) * HOUR_HEIGHT }}
                     />
                   ))}
