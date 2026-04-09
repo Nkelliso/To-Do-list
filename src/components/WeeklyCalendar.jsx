@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { effectivePriority, getDayPriority } from '../utils/priority'
 
 const TASK_DAYS = ['M', 'Tu', 'W', 'Th', 'F', 'Wknd']
 
@@ -27,16 +28,6 @@ const PRIORITY_PILL = {
   5: 'bg-red-950/90 text-red-400 border border-red-900',
 }
 
-const DAY_NUM = { M: 1, Tu: 2, W: 3, Th: 4, F: 5 }
-
-function getDayPriority(dayDue) {
-  if (dayDue === 'Wknd') return 1
-  const todayNum = new Date().getDay()
-  const dueNum = DAY_NUM[dayDue]
-  if (!dueNum) return 1
-  const daysAway = (dueNum - todayNum + 7) % 7
-  return [4, 3, 2, 1, 1, 1, 1][Math.min(daysAway, 6)]
-}
 
 function formatHourLabel(h) {
   if (h === 12) return '12p'
@@ -95,7 +86,7 @@ function groupByHour(tasks) {
 }
 
 function TaskPill({ task, isSelected, isBeingDragged, onPointerDown }) {
-  const color = PRIORITY_PILL[task.priority] || PRIORITY_PILL[1]
+  const color = PRIORITY_PILL[effectivePriority(task)] || PRIORITY_PILL[1]
   return (
     <button
       onPointerDown={(e) => onPointerDown(e, task)}

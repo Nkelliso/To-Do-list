@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { effectivePriority } from '../utils/priority'
 import TaskRow from './TaskRow'
 
 const DAY_ORDER = { M: 0, Tu: 1, W: 2, Th: 3, F: 4, Wknd: 5 }
@@ -60,7 +61,9 @@ function formatTime(t) {
 
 function sortByPriorityDayTime(tasks) {
   return [...tasks].sort((a, b) => {
-    if (b.priority !== a.priority) return b.priority - a.priority
+    const pa = effectivePriority(a)
+    const pb = effectivePriority(b)
+    if (pb !== pa) return pb - pa
     const dayDiff = (DAY_ORDER[a.dayDue] ?? 99) - (DAY_ORDER[b.dayDue] ?? 99)
     if (dayDiff !== 0) return dayDiff
     return (a.timeDue || '').localeCompare(b.timeDue || '')

@@ -23,7 +23,7 @@ function getDayPriority(dayDue) {
   if (!dueNum) return 1
   const daysAway = (dueNum - todayNum + 7) % 7
   // 0 days away → P4, 1 → P3, 2 → P2, 3+ → P1
-  const lookup = [4, 3, 2, 1, 1, 1, 1]
+  const lookup = [4, 3, 2, 2, 1, 1, 1]
   return lookup[Math.min(daysAway, lookup.length - 1)]
 }
 

@@ -1,4 +1,5 @@
 import { useRef, useEffect, useState } from 'react'
+import { effectivePriority } from '../utils/priority'
 
 const PRIORITY_BADGE = {
   1: 'bg-gray-800 text-gray-500',
@@ -69,7 +70,8 @@ export default function TaskRow({ task, isSelected, onSelect, onToggle, onDelete
     if (e.key === 'Escape') cancelEdit()
   }
 
-  const textSize = PRIORITY_TEXT_SIZE[task.priority] || PRIORITY_TEXT_SIZE[1]
+  const priority = effectivePriority(task)
+  const textSize = PRIORITY_TEXT_SIZE[priority] || PRIORITY_TEXT_SIZE[1]
 
   return (
     <div
@@ -116,10 +118,10 @@ export default function TaskRow({ task, isSelected, onSelect, onToggle, onDelete
       {/* Priority badge */}
       <span
         className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full flex-shrink-0 ${
-          PRIORITY_BADGE[task.priority] || PRIORITY_BADGE[1]
+          PRIORITY_BADGE[priority] || PRIORITY_BADGE[1]
         }`}
       >
-        P{task.priority}
+        P{priority}
       </span>
 
       {/* Day + time */}
