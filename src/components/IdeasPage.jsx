@@ -2,19 +2,24 @@ import { useEffect, useRef, useState, forwardRef, useImperativeHandle } from 're
 
 const FONT_SIZES = { small: 13, medium: 16, large: 20 }
 
-const IdeasPage = forwardRef(function IdeasPage({ content, onChange }, ref) {
+const IdeasPage = forwardRef(function IdeasPage({
+  content,
+  onChange,
+  storageKey = 'taskflow_ideas_fontsize',
+  placeholder = 'Jot down ideas, links, thoughts...',
+}, ref) {
   const editorRef = useRef(null)
   const debounceRef = useRef(null)
   const [saved, setSaved] = useState(false)
   const initialized = useRef(false)
   const [fontSize, setFontSize] = useState(() => {
-    const saved = localStorage.getItem('taskflow_ideas_fontsize')
+    const saved = localStorage.getItem(storageKey)
     return saved && FONT_SIZES[saved] ? saved : 'medium'
   })
 
   const changeFontSize = (size) => {
     setFontSize(size)
-    localStorage.setItem('taskflow_ideas_fontsize', size)
+    localStorage.setItem(storageKey, size)
   }
 
   // Set HTML once on mount only
@@ -156,7 +161,7 @@ const IdeasPage = forwardRef(function IdeasPage({ content, onChange }, ref) {
           ref={editorRef}
           contentEditable
           suppressContentEditableWarning
-          data-placeholder="Jot down ideas, links, thoughts..."
+          data-placeholder={placeholder}
           className="ideas-editor flex-1 overflow-y-auto px-6 py-4 text-stone-300 text-sm leading-relaxed outline-none"
           onInput={triggerSave}
           onKeyDown={handleKeyDown}

@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react'
 import { useAuth } from './hooks/useAuth'
 import { useTasks } from './hooks/useTasks'
 import { useNotes } from './hooks/useNotes'
+import { useAiNotes } from './hooks/useAiNotes'
 import Login from './components/Login'
 import Header from './components/Header'
 import TaskList from './components/TaskList'
@@ -14,11 +15,13 @@ export default function App() {
   const { user, signIn, signOut } = useAuth()
   const { tasks, addTask, toggleTask, deleteTask, updateTask, bulkAddTasks, archiveTasks, deleteTasks } = useTasks(user?.uid)
   const { content, saveContent, loaded } = useNotes(user?.uid)
+  const { content: aiContent, saveContent: saveAiContent, loaded: aiLoaded } = useAiNotes(user?.uid)
   const [showModal, setShowModal] = useState(false)
   const [selectedTaskId, setSelectedTaskId] = useState(null)
   const [page, setPage] = useState('todo')
   const [showBulkImport, setShowBulkImport] = useState(false)
   const ideasRef = useRef(null)
+  const aiNotesRef = useRef(null)
   const archiveChecked = useRef(false)
 
   // Weekly archive: on first task load, move completed tasks from before this
@@ -69,6 +72,9 @@ export default function App() {
     if (page === 'ideas' && newPage !== 'ideas') {
       ideasRef.current?.flush()
     }
+    if (page === 'ainotes' && newPage !== 'ainotes') {
+      aiNotesRef.current?.flush()
+    }
     setPage(newPage)
   }
 
@@ -107,6 +113,19 @@ export default function App() {
             ref={ideasRef}
             content={content}
             onChange={saveContent}
+          />
+        )}
+      </div>
+
+      {/* AI Notes page — always mounted so editor DOM is preserved */}
+      <div className={`flex flex-col flex-1 min-h-0 w-full ${page !== 'ainotes' ? 'hidden' : ''}`}>
+        {aiLoaded && (
+          <IdeasPage
+            ref={aiNotesRef}
+            content={aiContent}
+            onChange={saveAiContent}
+            storageKey="taskflow_ainotes_fontsize"
+            placeholder="Write your AI notes here..."
           />
         )}
       </div>
@@ -157,7 +176,7 @@ export default function App() {
       )}
 
       <div className="fixed bottom-2 left-3 text-[10px] text-white pointer-events-none select-none z-50">
-        v1.9
+        v2.0
       </div>
     </div>
   )

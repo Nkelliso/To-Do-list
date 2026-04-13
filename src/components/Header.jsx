@@ -29,7 +29,7 @@ export default function Header({ user, onAddTask, onSignOut, page, onPageChange,
     >
       {/* Left: Add Task (hidden on Ideas page) */}
       <div>
-        {page !== 'ideas' && (
+        {page !== 'ideas' && page !== 'ainotes' && (
           <button
             onClick={onAddTask}
             className="flex items-center gap-2 px-4 py-2 bg-green-700 hover:bg-green-600 text-white text-sm font-medium rounded-lg transition-colors cursor-pointer select-none"
@@ -64,11 +64,21 @@ export default function Header({ user, onAddTask, onSignOut, page, onPageChange,
         >
           Ideas
         </button>
+        <button
+          onClick={() => onPageChange('ainotes')}
+          className={`text-sm font-semibold tracking-wide transition-colors cursor-pointer select-none pb-0.5 ${
+            page === 'ainotes'
+              ? 'text-amber-100/90 border-b border-amber-100/60'
+              : 'text-amber-100/40 hover:text-amber-100/60'
+          }`}
+        >
+          AI Notes
+        </button>
       </div>
 
       {/* Right: Bulk import icon + User avatar */}
       <div className="flex justify-end items-center gap-2">
-        {page !== 'ideas' && (
+        {page !== 'ideas' && page !== 'ainotes' && (
           <button
             onClick={onBulkImport}
             title="Bulk import tasks"
