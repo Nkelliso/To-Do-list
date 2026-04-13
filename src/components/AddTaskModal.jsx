@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { getDayPriority } from '../utils/priority'
 
 const DAYS = ['M', 'Tu', 'W', 'Th', 'F', 'Wknd']
 const DAY_LABEL = { M: 'M', Tu: 'Tu', W: 'W', Th: 'Th', F: 'F', Wknd: 'Weekend' }
@@ -11,20 +12,6 @@ const PRIORITY_COLORS = {
   3: 'text-yellow-500',
   4: 'text-orange-400',
   5: 'text-red-400',
-}
-
-// Day number in the week (Mon=1 … Fri=5)
-const DAY_NUM = { M: 1, Tu: 2, W: 3, Th: 4, F: 5 }
-
-function getDayPriority(dayDue) {
-  if (dayDue === 'Wknd') return 1
-  const todayNum = new Date().getDay() // 0=Sun, 1=Mon … 6=Sat
-  const dueNum = DAY_NUM[dayDue]
-  if (!dueNum) return 1
-  const daysAway = (dueNum - todayNum + 7) % 7
-  // 0 days away → P4, 1 → P3, 2 → P2, 3+ → P1
-  const lookup = [4, 3, 2, 2, 1, 1, 1]
-  return lookup[Math.min(daysAway, lookup.length - 1)]
 }
 
 export default function AddTaskModal({ onClose, onSave }) {

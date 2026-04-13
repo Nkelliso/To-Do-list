@@ -274,6 +274,7 @@ export default function WeeklyCalendar({ tasks, selectedTaskId, onSelectTask, on
     TASK_DAYS.map(d => [d, { scheduled: [], unscheduled: [] }])
   )
   for (const task of tasks) {
+    if (task.completed) continue
     const group = tasksByDay[task.dayDue]
     if (!group) continue
     if (task.timeDue) group.scheduled.push(task)

@@ -52,18 +52,6 @@ export default function App() {
       archiveTasks(toArchive).then(() => {
         localStorage.setItem('taskflow_last_weekly_archive', currentWeekMonday)
       })
-
-      // Delete incomplete tasks left over from before this week
-      const monDate = new Date(currentWeekMonday + 'T00:00:00')
-      const toDeleteIncomplete = tasks
-        .filter(t => {
-          if (t.completed || t.archived) return false
-          if (!t.createdAt) return false
-          const created = t.createdAt.toDate ? t.createdAt.toDate() : new Date(t.createdAt)
-          return created < monDate
-        })
-        .map(t => t.id)
-      deleteTasks(toDeleteIncomplete)
     }
 
     // Delete archived tasks older than 30 days
@@ -169,7 +157,7 @@ export default function App() {
       )}
 
       <div className="fixed bottom-2 left-3 text-[10px] text-white pointer-events-none select-none z-50">
-        v1.8
+        v1.9
       </div>
     </div>
   )
