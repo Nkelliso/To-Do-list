@@ -131,7 +131,7 @@ export default function App() {
       </div>
 
       {/* To-Do + Calendar — always mounted */}
-      <div className={`flex flex-1 md:min-h-0 flex-col md:flex-row ${page === 'ideas' ? 'hidden' : ''}`}>
+      <div className={`flex flex-1 md:min-h-0 flex-col md:flex-row ${page === 'ideas' || page === 'ainotes' ? 'hidden' : ''}`}>
         {/* Left column — task list */}
         <div
           className="w-full md:w-2/5 md:flex-shrink-0 md:overflow-y-auto border-b md:border-b-0 md:border-r border-green-900/40"
@@ -176,7 +176,7 @@ export default function App() {
       )}
 
       <div className="fixed bottom-2 left-3 text-[10px] text-white pointer-events-none select-none z-50">
-        v2.0
+        v2.1
       </div>
     </div>
   )
