@@ -9,7 +9,7 @@ import {
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-/** Pull the first non-empty plain-text line from HTML content. */
+/** Strip HTML and return the first non-empty line of plain text. */
 function extractTitle(html) {
   if (!html) return 'Untitled'
   const div = document.createElement('div')
@@ -19,6 +19,14 @@ function extractTitle(html) {
   return firstLine || 'Untitled'
 }
 
+/** Strip HTML tags to get plain text for the textarea. */
+function htmlToPlain(html) {
+  if (!html) return ''
+  const div = document.createElement('div')
+  div.innerHTML = html
+  return (div.textContent || '').replace(/\r\n/g, '\n')
+}
+
 // ── Sub-components ────────────────────────────────────────────────────────────
 
 function NoteListItem({ note, isSelected, onClick, onPin, onDelete }) {
@@ -26,28 +34,25 @@ function NoteListItem({ note, isSelected, onClick, onPin, onDelete }) {
   return (
     <div
       onClick={onClick}
-      className="group flex items-center gap-1.5 px-2.5 py-2.5 cursor-pointer select-none border-b transition-colors"
+      className="group flex items-center gap-1.5 px-3 py-2.5 cursor-pointer select-none border-b transition-colors"
       style={{
-        borderBottomColor: '#fde68a',
-        background: isSelected ? '#fde68a' : 'transparent',
+        borderBottomColor: '#d1d5db',
+        background: isSelected ? '#bfdbfe' : 'transparent',
       }}
     >
       {note.pinned && (
-        <svg className="w-2.5 h-2.5 text-amber-700 flex-shrink-0" fill="currentColor" viewBox="0 0 24 24">
+        <svg className="w-2.5 h-2.5 text-blue-500 flex-shrink-0" fill="currentColor" viewBox="0 0 24 24">
           <path d="M16 12V4h1V2H7v2h1v8l-2 2v2h5.2v6h1.6v-6H18v-2l-2-2z" />
         </svg>
       )}
-      <span
-        className="flex-1 min-w-0 text-xs truncate text-amber-950 font-medium leading-snug"
-        style={{ fontFamily: "Georgia, 'Palatino Linotype', serif" }}
-      >
+      <span className="flex-1 min-w-0 text-xs truncate text-gray-700 font-medium leading-snug">
         {title}
       </span>
       <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
         <button
           onClick={(e) => { e.stopPropagation(); onPin() }}
           title={note.pinned ? 'Unpin' : 'Pin'}
-          className="p-0.5 rounded hover:bg-amber-300 text-amber-700 transition-colors"
+          className="p-0.5 rounded hover:bg-blue-200 text-gray-400 hover:text-blue-600 transition-colors"
         >
           <svg className="w-3 h-3" fill={note.pinned ? 'currentColor' : 'none'} stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
@@ -56,7 +61,7 @@ function NoteListItem({ note, isSelected, onClick, onPin, onDelete }) {
         <button
           onClick={(e) => { e.stopPropagation(); onDelete(e) }}
           title="Delete note"
-          className="p-0.5 rounded hover:bg-red-100 text-amber-700 hover:text-red-600 transition-colors"
+          className="p-0.5 rounded hover:bg-red-100 text-gray-400 hover:text-red-500 transition-colors"
         >
           <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -67,18 +72,6 @@ function NoteListItem({ note, isSelected, onClick, onPin, onDelete }) {
   )
 }
 
-function ToolbarBtn({ onMouseDown, title, children }) {
-  return (
-    <button
-      onMouseDown={(e) => { e.preventDefault(); onMouseDown() }}
-      title={title}
-      className="flex items-center justify-center px-2 py-1 text-amber-900/60 hover:text-amber-900 hover:bg-amber-200/60 rounded transition-colors cursor-pointer select-none min-w-[1.75rem] text-sm leading-none"
-    >
-      {children}
-    </button>
-  )
-}
-
 // ── Main component ─────────────────────────────────────────────────────────────
 
 const IdeaNotebook = forwardRef(function IdeaNotebook(
@@ -86,13 +79,16 @@ const IdeaNotebook = forwardRef(function IdeaNotebook(
   ref
 ) {
   const [selectedId, setSelectedId] = useState(null)
+  const [editorContent, setEditorContent] = useState('')
   const [saved, setSaved] = useState(false)
   const [isMobile, setIsMobile] = useState(() => window.innerWidth < 768)
 
-  const editorRef = useRef(null)
+  const textareaRef = useRef(null)
   const debounceRef = useRef(null)
-  /** ID of the note whose content is currently in the editor DOM */
+  /** ID of the note whose content is currently loaded in the textarea */
   const loadedNoteRef = useRef(null)
+  /** Current textarea value — kept in a ref so flush() always has latest */
+  const contentRef = useRef('')
   /** Mirror of notes prop that's always current inside callbacks/effects */
   const notesRef = useRef(notes)
   useEffect(() => { notesRef.current = notes }, [notes])
@@ -103,7 +99,7 @@ const IdeaNotebook = forwardRef(function IdeaNotebook(
     return () => window.removeEventListener('resize', h)
   }, [])
 
-  // Sort: pinned notes first, then by updatedAt desc within each group
+  // Sort: pinned first, then by updatedAt desc
   const sortedNotes = useMemo(() => {
     const ts = (n) => {
       if (!n.updatedAt) return 0
@@ -117,75 +113,84 @@ const IdeaNotebook = forwardRef(function IdeaNotebook(
     })
   }, [notes])
 
-  // Auto-select first note on initial load (when no note is selected yet).
-  // Deletion is handled explicitly in handleDelete — we intentionally do NOT
-  // override a selectedId that's absent from sortedNotes, because createNote sets
-  // selectedId optimistically before the Firestore round-trip returns the new doc.
+  // Auto-select first note on initial load only
   useEffect(() => {
     if (!selectedId && sortedNotes.length > 0) {
       setSelectedId(sortedNotes[0].id)
     }
   }, [sortedNotes, selectedId])
 
-  // Load note content into the editor whenever the selected note changes
+  // Load note content into textarea when selected note changes
   useEffect(() => {
-    if (!editorRef.current || !selectedId) return
-    if (loadedNoteRef.current === selectedId) return // already loaded
+    if (!selectedId) return
+    if (loadedNoteRef.current === selectedId) return
     const note = notesRef.current.find((n) => n.id === selectedId)
     if (!note) return
-    editorRef.current.innerHTML = note.content || ''
+    const plain = htmlToPlain(note.content)
+    contentRef.current = plain
+    setEditorContent(plain)
     loadedNoteRef.current = selectedId
   }, [selectedId])
 
-  // Expose flush() so App.jsx can force-save when switching away from Ideas tab
+  // Expose flush() so App.jsx can force-save when switching away
   useImperativeHandle(ref, () => ({
     flush() {
       clearTimeout(debounceRef.current)
-      if (editorRef.current && loadedNoteRef.current) {
-        updateNote(loadedNoteRef.current, { content: editorRef.current.innerHTML })
+      if (loadedNoteRef.current) {
+        updateNote(loadedNoteRef.current, { content: contentRef.current })
       }
     },
   }))
 
   useEffect(() => () => clearTimeout(debounceRef.current), [])
 
-  const triggerSave = () => {
+  const triggerSave = (value) => {
     clearTimeout(debounceRef.current)
     debounceRef.current = setTimeout(() => {
-      if (editorRef.current && loadedNoteRef.current) {
-        updateNote(loadedNoteRef.current, { content: editorRef.current.innerHTML })
+      if (loadedNoteRef.current) {
+        updateNote(loadedNoteRef.current, { content: value })
         setSaved(true)
         setTimeout(() => setSaved(false), 1500)
       }
     }, 500)
   }
 
-  /** Switch to another note, flushing any pending save for the current one first. */
+  const handleChange = (e) => {
+    const value = e.target.value
+    contentRef.current = value
+    setEditorContent(value)
+    triggerSave(value)
+  }
+
+  /** Switch to another note, flushing any pending save first. */
   const switchNote = (id) => {
     if (id === selectedId) return
     clearTimeout(debounceRef.current)
-    if (editorRef.current && loadedNoteRef.current) {
-      updateNote(loadedNoteRef.current, { content: editorRef.current.innerHTML })
+    if (loadedNoteRef.current) {
+      updateNote(loadedNoteRef.current, { content: contentRef.current })
     }
     loadedNoteRef.current = null
     setSelectedId(id)
   }
 
   const handleCreate = async () => {
-    // Flush current note before creating
     clearTimeout(debounceRef.current)
-    if (editorRef.current && loadedNoteRef.current) {
-      updateNote(loadedNoteRef.current, { content: editorRef.current.innerHTML })
+    if (loadedNoteRef.current) {
+      updateNote(loadedNoteRef.current, { content: contentRef.current })
     }
-    const docRef = await createNote()
-    // Optimistically set up the editor before Firestore round-trips back
+    let docRef
+    try {
+      docRef = await createNote()
+    } catch (err) {
+      console.error('[IdeaNotebook] Failed to create note:', err)
+      return
+    }
     loadedNoteRef.current = null
+    contentRef.current = ''
+    setEditorContent('')
     setSelectedId(docRef.id)
-    if (editorRef.current) {
-      editorRef.current.innerHTML = ''
-      loadedNoteRef.current = docRef.id
-      setTimeout(() => editorRef.current?.focus(), 50)
-    }
+    loadedNoteRef.current = docRef.id
+    setTimeout(() => textareaRef.current?.focus(), 50)
   }
 
   const handleDelete = (e, id) => {
@@ -199,71 +204,13 @@ const IdeaNotebook = forwardRef(function IdeaNotebook(
     }
   }
 
-  const fmt = (cmd, value) => {
-    editorRef.current?.focus()
-    document.execCommand(cmd, false, value ?? null)
-  }
-
-  const handleKeyDown = (e) => {
-    if (e.key !== 'Enter') return
-    const sel = window.getSelection()
-    if (!sel || !sel.rangeCount) return
-    const range = sel.getRangeAt(0)
-    const node = range.startContainer
-    let lineEl = node.nodeType === Node.TEXT_NODE ? node.parentElement : node
-    while (lineEl && lineEl !== editorRef.current && lineEl.parentElement !== editorRef.current) {
-      lineEl = lineEl.parentElement
-    }
-    const lineText =
-      lineEl === editorRef.current
-        ? node.nodeType === Node.TEXT_NODE
-          ? node.textContent
-          : lineEl.textContent
-        : lineEl?.textContent ?? ''
-    if (!lineText.startsWith('- ')) return
-    e.preventDefault()
-    if (lineText === '- ') {
-      if (lineEl && lineEl !== editorRef.current) {
-        const r = document.createRange()
-        r.selectNodeContents(lineEl)
-        sel.removeAllRanges()
-        sel.addRange(r)
-        document.execCommand('delete')
-      }
-      document.execCommand('insertParagraph')
-    } else {
-      document.execCommand('insertParagraph')
-      document.execCommand('insertText', false, '- ')
-    }
-  }
-
-  // ── Legal-pad editor styles ──────────────────────────────────────────────────
-  const editorStyle = {
-    backgroundColor: '#fefce8',
-    backgroundImage: [
-      // Red vertical margin line at 52px from left
-      'linear-gradient(to right, transparent 52px, #fca5a5 52px, #fca5a5 54px, transparent 54px)',
-      // Blue horizontal ruled lines every 28px
-      'repeating-linear-gradient(to bottom, transparent, transparent 27px, #bfdbfe 27px, #bfdbfe 28px)',
-    ].join(', '),
-    fontFamily: "Georgia, 'Palatino Linotype', Palatino, serif",
-    fontSize: '15px',
-    lineHeight: '28px',
-    color: '#1c1917',
-    paddingLeft: '68px',
-    paddingRight: '28px',
-    paddingTop: '8px',
-    paddingBottom: '40px',
-  }
-
-  const sidebarBg = '#fef3c7'
-  const dividerColor = '#fde68a'
-
-  // The selected note object (for mobile toolbar actions)
   const selectedNote = sortedNotes.find((n) => n.id === selectedId)
 
+  const sidebarBg = '#e4e4e4'
+  const dividerColor = '#d1d5db'
+
   return (
-    <div className="flex flex-col flex-1 min-h-0" style={{ background: sidebarBg }}>
+    <div className="flex flex-col flex-1 min-h-0" style={{ background: '#f0f0f0' }}>
 
       {/* ── Mobile: horizontally scrollable note strip ── */}
       {isMobile && (
@@ -271,21 +218,17 @@ const IdeaNotebook = forwardRef(function IdeaNotebook(
           className="flex items-stretch flex-shrink-0 border-b overflow-x-auto"
           style={{ background: sidebarBg, borderBottomColor: dividerColor, minHeight: '42px' }}
         >
-          {/* New note button */}
           <button
             onClick={handleCreate}
             title="New note"
-            className="flex-shrink-0 flex items-center justify-center w-10 text-xl font-light text-amber-800 hover:bg-amber-200/70 border-r transition-colors select-none cursor-pointer"
+            className="flex-shrink-0 flex items-center justify-center w-10 text-xl font-light text-gray-600 hover:bg-gray-300 border-r transition-colors select-none cursor-pointer"
             style={{ borderRightColor: dividerColor }}
           >
             +
           </button>
 
           {sortedNotes.length === 0 && (
-            <span
-              className="flex items-center px-3 text-xs text-amber-700/50 italic"
-              style={{ fontFamily: "Georgia, serif" }}
-            >
+            <span className="flex items-center px-3 text-xs text-gray-400 italic">
               No notes yet
             </span>
           )}
@@ -297,20 +240,43 @@ const IdeaNotebook = forwardRef(function IdeaNotebook(
               className="flex-shrink-0 flex items-center gap-1 px-3 py-1 text-xs border-r transition-colors select-none cursor-pointer whitespace-nowrap"
               style={{
                 borderRightColor: dividerColor,
-                fontFamily: "Georgia, serif",
-                background: note.id === selectedId ? '#fde68a' : 'transparent',
-                color: '#1c1917',
+                background: note.id === selectedId ? '#bfdbfe' : 'transparent',
+                color: '#374151',
                 fontWeight: note.id === selectedId ? 600 : 400,
               }}
             >
               {note.pinned && (
-                <svg className="w-2.5 h-2.5 flex-shrink-0 text-amber-700" fill="currentColor" viewBox="0 0 24 24">
+                <svg className="w-2.5 h-2.5 flex-shrink-0 text-blue-400" fill="currentColor" viewBox="0 0 24 24">
                   <path d="M16 12V4h1V2H7v2h1v8l-2 2v2h5.2v6h1.6v-6H18v-2l-2-2z" />
                 </svg>
               )}
               {extractTitle(note.content)}
             </button>
           ))}
+
+          {/* Mobile: pin + delete in the strip header area */}
+          {selectedNote && (
+            <div className="flex items-center gap-1 ml-auto px-2 flex-shrink-0">
+              <button
+                onClick={() => updateNote(selectedNote.id, { pinned: !selectedNote.pinned })}
+                title={selectedNote.pinned ? 'Unpin' : 'Pin'}
+                className="p-1 rounded hover:bg-blue-200 text-gray-400 hover:text-blue-600 transition-colors"
+              >
+                <svg className="w-3.5 h-3.5" fill={selectedNote.pinned ? 'currentColor' : 'none'} stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+                </svg>
+              </button>
+              <button
+                onClick={(e) => handleDelete(e, selectedNote.id)}
+                title="Delete note"
+                className="p-1 rounded hover:bg-red-100 text-gray-400 hover:text-red-500 transition-colors"
+              >
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+              </button>
+            </div>
+          )}
         </div>
       )}
 
@@ -328,16 +294,13 @@ const IdeaNotebook = forwardRef(function IdeaNotebook(
               className="flex items-center justify-between px-3 py-2 flex-shrink-0 border-b"
               style={{ borderBottomColor: dividerColor }}
             >
-              <span
-                className="text-[10px] font-semibold uppercase tracking-widest text-amber-900/50"
-                style={{ fontFamily: "Georgia, serif" }}
-              >
+              <span className="text-[10px] font-semibold uppercase tracking-widest text-gray-500">
                 Notes
               </span>
               <button
                 onClick={handleCreate}
                 title="New note"
-                className="flex items-center justify-center w-6 h-6 rounded text-lg font-light leading-none text-amber-800 hover:bg-amber-300/60 transition-colors cursor-pointer select-none"
+                className="flex items-center justify-center w-6 h-6 rounded text-lg font-light leading-none text-gray-600 hover:bg-gray-300 transition-colors cursor-pointer select-none"
               >
                 +
               </button>
@@ -346,10 +309,7 @@ const IdeaNotebook = forwardRef(function IdeaNotebook(
             {/* Note list */}
             <div className="flex-1 overflow-y-auto">
               {sortedNotes.length === 0 && (
-                <p
-                  className="text-xs text-amber-900/40 px-3 py-5 text-center italic leading-relaxed"
-                  style={{ fontFamily: "Georgia, serif" }}
-                >
+                <p className="text-xs text-gray-400 px-3 py-5 text-center italic leading-relaxed">
                   No notes yet.<br />Press + to create one.
                 </p>
               )}
@@ -370,98 +330,37 @@ const IdeaNotebook = forwardRef(function IdeaNotebook(
         {/* ── Editor panel ── */}
         <div className="flex flex-col flex-1 min-h-0">
 
-          {/* Toolbar */}
+          {/* Saved indicator bar */}
           <div
-            className="flex items-center gap-0.5 px-2 py-1 flex-shrink-0 border-b"
-            style={{ background: sidebarBg, borderBottomColor: dividerColor }}
+            className="flex items-center px-3 py-1 flex-shrink-0 border-b"
+            style={{ background: sidebarBg, borderBottomColor: dividerColor, minHeight: '32px' }}
           >
-            <ToolbarBtn onMouseDown={() => fmt('bold')} title="Bold">
-              <span className="font-bold">B</span>
-            </ToolbarBtn>
-            <ToolbarBtn onMouseDown={() => fmt('italic')} title="Italic">
-              <span className="italic">I</span>
-            </ToolbarBtn>
-            <ToolbarBtn onMouseDown={() => fmt('strikeThrough')} title="Strikethrough">
-              <span className="line-through">S</span>
-            </ToolbarBtn>
-            <ToolbarBtn onMouseDown={() => fmt('insertUnorderedList')} title="Bullet list">
-              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01" />
-              </svg>
-            </ToolbarBtn>
-
-            <div className="w-px h-4 mx-1 flex-shrink-0" style={{ background: dividerColor }} />
-
-            <ToolbarBtn onMouseDown={() => fmt('fontSize', '5')} title="Larger text">
-              <span className="text-base leading-none">A</span>
-              <span className="text-[9px] align-super leading-none ml-px">+</span>
-            </ToolbarBtn>
-            <ToolbarBtn onMouseDown={() => fmt('fontSize', '2')} title="Smaller text">
-              <span className="text-xs leading-none">A</span>
-              <span className="text-[9px] align-super leading-none ml-px">−</span>
-            </ToolbarBtn>
-
-            {/* Mobile-only: pin + delete for the currently selected note */}
-            {isMobile && selectedNote && (
-              <>
-                <div className="w-px h-4 mx-1 flex-shrink-0" style={{ background: dividerColor }} />
-                <ToolbarBtn
-                  onMouseDown={() => updateNote(selectedNote.id, { pinned: !selectedNote.pinned })}
-                  title={selectedNote.pinned ? 'Unpin' : 'Pin'}
-                >
-                  <svg
-                    className="w-3.5 h-3.5"
-                    fill={selectedNote.pinned ? 'currentColor' : 'none'}
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
-                  </svg>
-                </ToolbarBtn>
-                <button
-                  onMouseDown={(e) => { e.preventDefault(); handleDelete(e, selectedNote.id) }}
-                  title="Delete note"
-                  className="flex items-center justify-center px-2 py-1 text-amber-900/60 hover:text-red-600 hover:bg-red-100 rounded transition-colors cursor-pointer select-none min-w-[1.75rem]"
-                >
-                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                  </svg>
-                </button>
-              </>
-            )}
-
-            {/* Saved indicator */}
             <span
-              className="ml-auto text-xs pointer-events-none select-none transition-opacity duration-500"
-              style={{ color: '#92400e', opacity: saved ? 0.7 : 0 }}
+              className="ml-auto text-xs pointer-events-none select-none transition-opacity duration-500 text-gray-500"
+              style={{ opacity: saved ? 0.8 : 0 }}
             >
               Saved
             </span>
           </div>
 
-          {/* Editor area */}
+          {/* Textarea */}
           {selectedId ? (
-            <div className="relative flex-1 min-h-0">
-              <div
-                ref={editorRef}
-                contentEditable
-                suppressContentEditableWarning
-                data-placeholder="Start writing..."
-                className="idea-notebook-editor absolute inset-0 overflow-y-auto outline-none"
-                style={editorStyle}
-                onInput={triggerSave}
-                onKeyDown={handleKeyDown}
-              />
-            </div>
+            <textarea
+              ref={textareaRef}
+              value={editorContent}
+              onChange={handleChange}
+              placeholder="Start writing..."
+              className="flex-1 resize-none outline-none p-4 text-sm text-gray-800 leading-relaxed"
+              style={{
+                background: '#ffffff',
+                fontFamily: 'ui-sans-serif, system-ui, sans-serif',
+                fontSize: '14px',
+                lineHeight: '1.7',
+              }}
+            />
           ) : (
-            <div
-              className="flex-1 flex items-center justify-center"
-              style={{ background: '#fefce8' }}
-            >
-              <p
-                className="text-sm italic"
-                style={{ color: '#92400e', opacity: 0.4, fontFamily: "Georgia, serif" }}
-              >
+            <div className="flex-1 flex items-center justify-center" style={{ background: '#ffffff' }}>
+              <p className="text-sm italic text-gray-400">
                 Press + to create your first note.
               </p>
             </div>
