@@ -38,8 +38,8 @@ export function useIdeaNotes(uid) {
   }, [uid])
 
   // One-time migration: copy existing Master Ideas List HTML into the first note.
-  // Runs after Firestore data loads. Uses a flag field on the old ideas doc so it
-  // only ever runs once per user.
+  // Runs in the background after Firestore responds — does NOT block the UI.
+  // Uses a flag field on the old ideas doc so it only ever runs once per user.
   useEffect(() => {
     if (!uid || !loaded || migrated) return
     let cancelled = false
@@ -62,11 +62,13 @@ export function useIdeaNotes(uid) {
         // Merge so we don't wipe the old content field (it remains but is unused)
         await setDoc(flagRef, { migratedToNotebook: true }, { merge: true })
       }
-
-      if (!cancelled) setMigrated(true)
     }
 
-    run().catch(console.error)
+    // Always mark migration done — even on error — so the UI is never permanently blocked
+    run()
+      .catch(console.error)
+      .finally(() => { if (!cancelled) setMigrated(true) })
+
     return () => { cancelled = true }
   }, [uid, loaded, migrated])
 
@@ -87,6 +89,5 @@ export function useIdeaNotes(uid) {
   const deleteNote = (id) =>
     deleteDoc(doc(db, 'users', uid, 'ideaNotes', id))
 
-  // loaded is only true once Firestore has responded AND migration is confirmed done
   return { notes, loaded: loaded && migrated, createNote, updateNote, deleteNote }
 }
