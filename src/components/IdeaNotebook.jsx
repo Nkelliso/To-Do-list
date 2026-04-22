@@ -117,11 +117,12 @@ const IdeaNotebook = forwardRef(function IdeaNotebook(
     })
   }, [notes])
 
-  // Auto-select first note when list loads or when the selected note is deleted
+  // Auto-select first note on initial load (when no note is selected yet).
+  // Deletion is handled explicitly in handleDelete — we intentionally do NOT
+  // override a selectedId that's absent from sortedNotes, because createNote sets
+  // selectedId optimistically before the Firestore round-trip returns the new doc.
   useEffect(() => {
-    if (sortedNotes.length === 0) return
-    const exists = sortedNotes.some((n) => n.id === selectedId)
-    if (!selectedId || !exists) {
+    if (!selectedId && sortedNotes.length > 0) {
       setSelectedId(sortedNotes[0].id)
     }
   }, [sortedNotes, selectedId])
