@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { useAuth } from './hooks/useAuth'
 import { useTasks } from './hooks/useTasks'
-import { useNotes } from './hooks/useNotes'
+import { useIdeaNotes } from './hooks/useIdeaNotes'
 import { useAiNotes } from './hooks/useAiNotes'
 import Login from './components/Login'
 import Header from './components/Header'
@@ -9,12 +9,13 @@ import TaskList from './components/TaskList'
 import WeeklyCalendar from './components/WeeklyCalendar'
 import AddTaskModal from './components/AddTaskModal'
 import BulkImportModal from './components/BulkImportModal'
+import IdeaNotebook from './components/IdeaNotebook'
 import IdeasPage from './components/IdeasPage'
 
 export default function App() {
   const { user, signIn, signOut } = useAuth()
   const { tasks, addTask, toggleTask, deleteTask, updateTask, bulkAddTasks, archiveTasks, deleteTasks } = useTasks(user?.uid)
-  const { content, saveContent, loaded } = useNotes(user?.uid)
+  const { notes, loaded: ideaNotesLoaded, createNote, updateNote: updateIdeaNote, deleteNote } = useIdeaNotes(user?.uid)
   const { content: aiContent, saveContent: saveAiContent, loaded: aiLoaded } = useAiNotes(user?.uid)
   const [showModal, setShowModal] = useState(false)
   const [selectedTaskId, setSelectedTaskId] = useState(null)
@@ -108,11 +109,13 @@ export default function App() {
 
       {/* Ideas page — always mounted so editor DOM is preserved */}
       <div className={`flex flex-col flex-1 min-h-0 w-full ${page !== 'ideas' ? 'hidden' : ''}`}>
-        {loaded && (
-          <IdeasPage
+        {ideaNotesLoaded && (
+          <IdeaNotebook
             ref={ideasRef}
-            content={content}
-            onChange={saveContent}
+            notes={notes}
+            createNote={createNote}
+            updateNote={updateIdeaNote}
+            deleteNote={deleteNote}
           />
         )}
       </div>

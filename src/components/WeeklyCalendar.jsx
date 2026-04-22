@@ -247,8 +247,10 @@ export default function WeeklyCalendar({ tasks, selectedTaskId, onSelectTask, on
           const newTimeDue = (relY >= 0 && relY <= TOTAL_HEIGHT)
             ? pixelsToTime(relY)
             : (d.task.timeDue || '')
+          // Only raise priority when dragging to a new day — never lower it.
+          // The stored priority is the floor; day-based urgency can only increase it.
           const newPriority = newDayDue !== d.task.dayDue
-            ? getDayPriority(newDayDue)
+            ? Math.max(d.task.priority || 1, getDayPriority(newDayDue))
             : d.task.priority
 
           onUpdateTask(d.taskId, { dayDue: newDayDue, timeDue: newTimeDue, priority: newPriority })

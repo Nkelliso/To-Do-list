@@ -12,10 +12,12 @@ export function getDayPriority(dayDue) {
   return LOOKUP[Math.min(daysAway, LOOKUP.length - 1)]
 }
 
-// Use stored priority only for P5 (manual-only); everything else
-// is computed live from the due day so it advances as days pass.
+// Effective priority: the day-based urgency can only RAISE priority, never lower it.
+// The stored priority acts as a floor — auto-logic applies Math.max so a manually
+// elevated priority is preserved even when the due date is pushed further out.
+// P5 is always returned as-is (Critical is a manual-only designation).
 export function effectivePriority(task) {
   if (!task) return 1
   if (task.priority === 5) return 5
-  return getDayPriority(task.dayDue)
+  return Math.max(task.priority || 1, getDayPriority(task.dayDue))
 }

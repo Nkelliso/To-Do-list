@@ -24,7 +24,7 @@ export default function Header({ user, onAddTask, onSignOut, page, onPageChange,
 
   return (
     <header
-      className="grid grid-cols-3 items-center border-b border-green-900/40 px-6 py-3 flex-shrink-0"
+      className="grid grid-cols-[auto_1fr_auto] md:grid-cols-3 items-center border-b border-green-900/40 px-3 md:px-6 py-3 flex-shrink-0"
       style={{ background: '#261b2e' }}
     >
       {/* Left: Add Task (hidden on Ideas page) */}
@@ -32,31 +32,32 @@ export default function Header({ user, onAddTask, onSignOut, page, onPageChange,
         {page !== 'ideas' && page !== 'ainotes' && (
           <button
             onClick={onAddTask}
-            className="flex items-center gap-2 px-4 py-2 bg-green-700 hover:bg-green-600 text-white text-sm font-medium rounded-lg transition-colors cursor-pointer select-none"
+            className="flex items-center gap-2 px-2 py-2 md:px-4 bg-green-700 hover:bg-green-600 text-white text-sm font-medium rounded-lg transition-colors cursor-pointer select-none"
           >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
             </svg>
-            Add Task
+            <span className="hidden md:inline">Add Task</span>
           </button>
         )}
       </div>
 
       {/* Center: Nav */}
-      <div className="flex justify-center items-center gap-5">
+      <div className="flex justify-center items-center gap-2 md:gap-5">
         <button
           onClick={() => onPageChange('todo')}
-          className={`text-sm font-semibold tracking-wide transition-colors cursor-pointer select-none pb-0.5 ${
+          className={`text-xs md:text-sm font-semibold tracking-wide transition-colors cursor-pointer select-none pb-0.5 whitespace-nowrap ${
             page === 'todo'
               ? 'text-amber-100/90 border-b border-amber-100/60'
               : 'text-amber-100/40 hover:text-amber-100/60'
           }`}
         >
-          To-Do List
+          <span className="md:hidden">Tasks</span>
+          <span className="hidden md:inline">To-Do List</span>
         </button>
         <button
           onClick={() => onPageChange('ideas')}
-          className={`text-sm font-semibold tracking-wide transition-colors cursor-pointer select-none pb-0.5 ${
+          className={`text-xs md:text-sm font-semibold tracking-wide transition-colors cursor-pointer select-none pb-0.5 whitespace-nowrap ${
             page === 'ideas'
               ? 'text-amber-100/90 border-b border-amber-100/60'
               : 'text-amber-100/40 hover:text-amber-100/60'
@@ -66,7 +67,7 @@ export default function Header({ user, onAddTask, onSignOut, page, onPageChange,
         </button>
         <button
           onClick={() => onPageChange('ainotes')}
-          className={`text-sm font-semibold tracking-wide transition-colors cursor-pointer select-none pb-0.5 ${
+          className={`text-xs md:text-sm font-semibold tracking-wide transition-colors cursor-pointer select-none pb-0.5 whitespace-nowrap ${
             page === 'ainotes'
               ? 'text-amber-100/90 border-b border-amber-100/60'
               : 'text-amber-100/40 hover:text-amber-100/60'
