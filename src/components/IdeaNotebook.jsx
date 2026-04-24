@@ -20,13 +20,25 @@ function extractTitle(html) {
 
 // ── Sub-components ────────────────────────────────────────────────────────────
 
-function NoteListItem({ note, isSelected, onClick, onPin, onDelete }) {
+function NoteListItem({
+  note, isSelected, onClick, onPin, onDelete,
+  draggable, isDragOver, onDragStart, onDragOver, onDrop, onDragEnd,
+}) {
   const title = extractTitle(note.content)
   return (
     <div
       onClick={onClick}
+      draggable={draggable}
+      onDragStart={onDragStart}
+      onDragOver={onDragOver}
+      onDrop={onDrop}
+      onDragEnd={onDragEnd}
       className="group flex items-center gap-1.5 px-3 py-2.5 cursor-pointer select-none border-b transition-colors"
-      style={{ borderBottomColor: '#d1d5db', background: isSelected ? '#bfdbfe' : 'transparent' }}
+      style={{
+        borderBottomColor: '#d1d5db',
+        background: isSelected ? '#bfdbfe' : 'transparent',
+        borderTop: isDragOver ? '2px solid #3b82f6' : '2px solid transparent',
+      }}
     >
       {note.pinned && (
         <svg className="w-2.5 h-2.5 text-blue-500 flex-shrink-0" fill="currentColor" viewBox="0 0 24 24">
@@ -70,6 +82,8 @@ const IdeaNotebook = forwardRef(function IdeaNotebook(
   const [saved, setSaved] = useState(false)
   const [isMobile, setIsMobile] = useState(() => window.innerWidth < 768)
   const [displayNotes, setDisplayNotes] = useState([])
+  const [dragId, setDragId] = useState(null)
+  const [dragOverId, setDragOverId] = useState(null)
   /** The <img> element the user last clicked — drives the resize toolbar */
   const [selectedImg, setSelectedImg] = useState(null)
   const [imgToolbarPos, setImgToolbarPos] = useState({ top: 0, left: 0 })
@@ -87,7 +101,7 @@ const IdeaNotebook = forwardRef(function IdeaNotebook(
     return () => window.removeEventListener('resize', h)
   }, [])
 
-  // Sort: pinned first, then by updatedAt desc
+  // Sort: pinned first (by explicit order, then updatedAt), then unpinned by updatedAt
   const sortedNotes = useMemo(() => {
     const ts = (n) => {
       if (!n.updatedAt) return 0
@@ -97,6 +111,11 @@ const IdeaNotebook = forwardRef(function IdeaNotebook(
     }
     return [...notes].sort((a, b) => {
       if (a.pinned !== b.pinned) return a.pinned ? -1 : 1
+      if (a.pinned && b.pinned) {
+        const aOrd = a.order ?? Infinity
+        const bOrd = b.order ?? Infinity
+        if (aOrd !== bOrd) return aOrd - bOrd
+      }
       return ts(b) - ts(a)
     })
   }, [notes])
@@ -201,6 +220,48 @@ const IdeaNotebook = forwardRef(function IdeaNotebook(
       setSelectedImg(null)
       setSelectedId(remaining[0]?.id ?? null)
     }
+  }
+
+  // ── Pinned note drag-to-reorder ──────────────────────────────────────────────
+
+  const handleDragStart = (e, id) => {
+    setDragId(id)
+    e.dataTransfer.effectAllowed = 'move'
+  }
+
+  const handleDragOver = (e, id) => {
+    e.preventDefault()
+    e.dataTransfer.dropEffect = 'move'
+    if (id !== dragOverId) setDragOverId(id)
+  }
+
+  const handleDrop = (e, targetId) => {
+    e.preventDefault()
+    setDragId(null)
+    setDragOverId(null)
+    if (!dragId || dragId === targetId) return
+
+    const pinnedNotes = displayNotes.filter((n) => n.pinned)
+    const dragIdx = pinnedNotes.findIndex((n) => n.id === dragId)
+    const targetIdx = pinnedNotes.findIndex((n) => n.id === targetId)
+    if (dragIdx === -1 || targetIdx === -1) return
+
+    // Reorder pinned array
+    const reordered = [...pinnedNotes]
+    const [moved] = reordered.splice(dragIdx, 1)
+    reordered.splice(targetIdx, 0, moved)
+
+    // Optimistically update display list
+    const unpinned = displayNotes.filter((n) => !n.pinned)
+    setDisplayNotes([...reordered, ...unpinned])
+
+    // Persist new order to Firestore
+    reordered.forEach((note, i) => updateNote(note.id, { order: i }))
+  }
+
+  const handleDragEnd = () => {
+    setDragId(null)
+    setDragOverId(null)
   }
 
   // ── Image paste ──────────────────────────────────────────────────────────────
@@ -376,6 +437,12 @@ const IdeaNotebook = forwardRef(function IdeaNotebook(
                   onClick={() => switchNote(note.id)}
                   onPin={() => updateNote(note.id, { pinned: !note.pinned })}
                   onDelete={(e) => handleDelete(e, note.id)}
+                  draggable={note.pinned}
+                  isDragOver={dragOverId === note.id}
+                  onDragStart={(e) => handleDragStart(e, note.id)}
+                  onDragOver={(e) => handleDragOver(e, note.id)}
+                  onDrop={(e) => handleDrop(e, note.id)}
+                  onDragEnd={handleDragEnd}
                 />
               ))}
             </div>
