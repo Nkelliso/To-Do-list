@@ -9,7 +9,6 @@ import {
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-/** Strip HTML and return the first non-empty line of plain text. */
 function extractTitle(html) {
   if (!html) return 'Untitled'
   const div = document.createElement('div')
@@ -17,14 +16,6 @@ function extractTitle(html) {
   const text = (div.textContent || '').replace(/\r/g, '').trim()
   const firstLine = text.split('\n')[0].trim()
   return firstLine || 'Untitled'
-}
-
-/** Strip HTML tags to get plain text for the textarea. */
-function htmlToPlain(html) {
-  if (!html) return ''
-  const div = document.createElement('div')
-  div.innerHTML = html
-  return (div.textContent || '').replace(/\r\n/g, '\n')
 }
 
 // ── Sub-components ────────────────────────────────────────────────────────────
@@ -35,10 +26,7 @@ function NoteListItem({ note, isSelected, onClick, onPin, onDelete }) {
     <div
       onClick={onClick}
       className="group flex items-center gap-1.5 px-3 py-2.5 cursor-pointer select-none border-b transition-colors"
-      style={{
-        borderBottomColor: '#d1d5db',
-        background: isSelected ? '#bfdbfe' : 'transparent',
-      }}
+      style={{ borderBottomColor: '#d1d5db', background: isSelected ? '#bfdbfe' : 'transparent' }}
     >
       {note.pinned && (
         <svg className="w-2.5 h-2.5 text-blue-500 flex-shrink-0" fill="currentColor" viewBox="0 0 24 24">
@@ -79,19 +67,19 @@ const IdeaNotebook = forwardRef(function IdeaNotebook(
   ref
 ) {
   const [selectedId, setSelectedId] = useState(null)
-  const [editorContent, setEditorContent] = useState('')
   const [saved, setSaved] = useState(false)
   const [isMobile, setIsMobile] = useState(() => window.innerWidth < 768)
+  const [displayNotes, setDisplayNotes] = useState([])
+  /** The <img> element the user last clicked — drives the resize toolbar */
+  const [selectedImg, setSelectedImg] = useState(null)
+  const [imgToolbarPos, setImgToolbarPos] = useState({ top: 0, left: 0 })
 
-  const textareaRef = useRef(null)
+  const editorRef = useRef(null)
   const debounceRef = useRef(null)
-  /** ID of the note whose content is currently loaded in the textarea */
   const loadedNoteRef = useRef(null)
-  /** Current textarea value — kept in a ref so flush() always has latest */
-  const contentRef = useRef('')
-  /** Mirror of notes prop that's always current inside callbacks/effects */
   const notesRef = useRef(notes)
   useEffect(() => { notesRef.current = notes }, [notes])
+  const lastSelectedIdRef = useRef(null)
 
   useEffect(() => {
     const h = () => setIsMobile(window.innerWidth < 768)
@@ -120,63 +108,71 @@ const IdeaNotebook = forwardRef(function IdeaNotebook(
     }
   }, [sortedNotes, selectedId])
 
-  // Load note content into textarea when selected note changes
+  // Stable display list: re-sort only when the user switches notes
   useEffect(() => {
-    if (!selectedId) return
+    if (selectedId !== lastSelectedIdRef.current) {
+      lastSelectedIdRef.current = selectedId
+      setDisplayNotes(sortedNotes)
+      return
+    }
+    setDisplayNotes((prev) => {
+      const noteMap = new Map(sortedNotes.map((n) => [n.id, n]))
+      const prevIds = new Set(prev.map((n) => n.id))
+      const updated = prev.filter((n) => noteMap.has(n.id)).map((n) => noteMap.get(n.id))
+      const brandNew = sortedNotes.filter((n) => !prevIds.has(n.id))
+      return [...brandNew, ...updated]
+    })
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sortedNotes, selectedId])
+
+  // Load note content into editor when selected note changes
+  useEffect(() => {
+    if (!editorRef.current || !selectedId) return
     if (loadedNoteRef.current === selectedId) return
     const note = notesRef.current.find((n) => n.id === selectedId)
     if (!note) return
-    const plain = htmlToPlain(note.content)
-    contentRef.current = plain
-    setEditorContent(plain)
+    editorRef.current.innerHTML = note.content || ''
     loadedNoteRef.current = selectedId
+    setSelectedImg(null)
   }, [selectedId])
 
-  // Expose flush() so App.jsx can force-save when switching away
   useImperativeHandle(ref, () => ({
     flush() {
       clearTimeout(debounceRef.current)
-      if (loadedNoteRef.current) {
-        updateNote(loadedNoteRef.current, { content: contentRef.current })
+      if (editorRef.current && loadedNoteRef.current) {
+        updateNote(loadedNoteRef.current, { content: editorRef.current.innerHTML })
       }
     },
   }))
 
   useEffect(() => () => clearTimeout(debounceRef.current), [])
 
-  const triggerSave = (value) => {
+  const triggerSave = () => {
     clearTimeout(debounceRef.current)
     debounceRef.current = setTimeout(() => {
-      if (loadedNoteRef.current) {
-        updateNote(loadedNoteRef.current, { content: value })
+      if (editorRef.current && loadedNoteRef.current) {
+        updateNote(loadedNoteRef.current, { content: editorRef.current.innerHTML })
         setSaved(true)
         setTimeout(() => setSaved(false), 1500)
       }
     }, 500)
   }
 
-  const handleChange = (e) => {
-    const value = e.target.value
-    contentRef.current = value
-    setEditorContent(value)
-    triggerSave(value)
-  }
-
-  /** Switch to another note, flushing any pending save first. */
   const switchNote = (id) => {
     if (id === selectedId) return
     clearTimeout(debounceRef.current)
-    if (loadedNoteRef.current) {
-      updateNote(loadedNoteRef.current, { content: contentRef.current })
+    if (editorRef.current && loadedNoteRef.current) {
+      updateNote(loadedNoteRef.current, { content: editorRef.current.innerHTML })
     }
     loadedNoteRef.current = null
+    setSelectedImg(null)
     setSelectedId(id)
   }
 
   const handleCreate = async () => {
     clearTimeout(debounceRef.current)
-    if (loadedNoteRef.current) {
-      updateNote(loadedNoteRef.current, { content: contentRef.current })
+    if (editorRef.current && loadedNoteRef.current) {
+      updateNote(loadedNoteRef.current, { content: editorRef.current.innerHTML })
     }
     let docRef
     try {
@@ -186,11 +182,13 @@ const IdeaNotebook = forwardRef(function IdeaNotebook(
       return
     }
     loadedNoteRef.current = null
-    contentRef.current = ''
-    setEditorContent('')
+    setSelectedImg(null)
     setSelectedId(docRef.id)
-    loadedNoteRef.current = docRef.id
-    setTimeout(() => textareaRef.current?.focus(), 50)
+    if (editorRef.current) {
+      editorRef.current.innerHTML = ''
+      loadedNoteRef.current = docRef.id
+      setTimeout(() => editorRef.current?.focus(), 50)
+    }
   }
 
   const handleDelete = (e, id) => {
@@ -198,14 +196,78 @@ const IdeaNotebook = forwardRef(function IdeaNotebook(
     if (!window.confirm('Delete this note? This cannot be undone.')) return
     deleteNote(id)
     if (id === selectedId) {
-      const remaining = sortedNotes.filter((n) => n.id !== id)
+      const remaining = displayNotes.filter((n) => n.id !== id)
       loadedNoteRef.current = null
+      setSelectedImg(null)
       setSelectedId(remaining[0]?.id ?? null)
     }
   }
 
-  const selectedNote = sortedNotes.find((n) => n.id === selectedId)
+  // ── Image paste ──────────────────────────────────────────────────────────────
 
+  const handlePaste = (e) => {
+    const items = e.clipboardData?.items
+    if (!items) return
+    for (const item of items) {
+      if (item.type.startsWith('image/')) {
+        e.preventDefault()
+        const file = item.getAsFile()
+        const reader = new FileReader()
+        reader.onload = (ev) => {
+          document.execCommand(
+            'insertHTML',
+            false,
+            `<img src="${ev.target.result}" style="max-width:100%;height:auto;display:block;cursor:pointer;" />`
+          )
+          triggerSave()
+        }
+        reader.readAsDataURL(file)
+        return
+      }
+    }
+  }
+
+  // ── Image resize ─────────────────────────────────────────────────────────────
+
+  const positionImgToolbar = (img) => {
+    const editorRect = editorRef.current.getBoundingClientRect()
+    const imgRect = img.getBoundingClientRect()
+    setImgToolbarPos({
+      top: imgRect.bottom - editorRect.top + editorRef.current.scrollTop + 6,
+      left: Math.max(0, imgRect.left - editorRect.left),
+    })
+  }
+
+  const handleEditorClick = (e) => {
+    if (e.target.tagName === 'IMG') {
+      setSelectedImg(e.target)
+      positionImgToolbar(e.target)
+    } else {
+      setSelectedImg(null)
+    }
+  }
+
+  const scaleImg = (delta) => {
+    if (!selectedImg || !editorRef.current) return
+    const maxWidth = editorRef.current.clientWidth - 32
+    const currentWidth = selectedImg.offsetWidth
+    const newWidth = Math.max(80, Math.min(maxWidth, currentWidth + delta))
+    selectedImg.style.width = `${newWidth}px`
+    selectedImg.style.maxWidth = 'none'
+    positionImgToolbar(selectedImg)
+    triggerSave()
+  }
+
+  const removeImg = () => {
+    if (!selectedImg) return
+    selectedImg.remove()
+    setSelectedImg(null)
+    triggerSave()
+  }
+
+  // ── Render ───────────────────────────────────────────────────────────────────
+
+  const selectedNote = displayNotes.find((n) => n.id === selectedId)
   const sidebarBg = '#e4e4e4'
   const dividerColor = '#d1d5db'
 
@@ -227,13 +289,11 @@ const IdeaNotebook = forwardRef(function IdeaNotebook(
             +
           </button>
 
-          {sortedNotes.length === 0 && (
-            <span className="flex items-center px-3 text-xs text-gray-400 italic">
-              No notes yet
-            </span>
+          {displayNotes.length === 0 && (
+            <span className="flex items-center px-3 text-xs text-gray-400 italic">No notes yet</span>
           )}
 
-          {sortedNotes.map((note) => (
+          {displayNotes.map((note) => (
             <button
               key={note.id}
               onClick={() => switchNote(note.id)}
@@ -254,7 +314,6 @@ const IdeaNotebook = forwardRef(function IdeaNotebook(
             </button>
           ))}
 
-          {/* Mobile: pin + delete in the strip header area */}
           {selectedNote && (
             <div className="flex items-center gap-1 ml-auto px-2 flex-shrink-0">
               <button
@@ -289,14 +348,11 @@ const IdeaNotebook = forwardRef(function IdeaNotebook(
             className="w-52 flex-shrink-0 flex flex-col border-r"
             style={{ background: sidebarBg, borderRightColor: dividerColor }}
           >
-            {/* Sidebar header */}
             <div
               className="flex items-center justify-between px-3 py-2 flex-shrink-0 border-b"
               style={{ borderBottomColor: dividerColor }}
             >
-              <span className="text-[10px] font-semibold uppercase tracking-widest text-gray-500">
-                Notes
-              </span>
+              <span className="text-[10px] font-semibold uppercase tracking-widest text-gray-500">Notes</span>
               <button
                 onClick={handleCreate}
                 title="New note"
@@ -306,14 +362,13 @@ const IdeaNotebook = forwardRef(function IdeaNotebook(
               </button>
             </div>
 
-            {/* Note list */}
             <div className="flex-1 overflow-y-auto">
-              {sortedNotes.length === 0 && (
+              {displayNotes.length === 0 && (
                 <p className="text-xs text-gray-400 px-3 py-5 text-center italic leading-relaxed">
                   No notes yet.<br />Press + to create one.
                 </p>
               )}
-              {sortedNotes.map((note) => (
+              {displayNotes.map((note) => (
                 <NoteListItem
                   key={note.id}
                   note={note}
@@ -330,7 +385,7 @@ const IdeaNotebook = forwardRef(function IdeaNotebook(
         {/* ── Editor panel ── */}
         <div className="flex flex-col flex-1 min-h-0">
 
-          {/* Saved indicator bar */}
+          {/* Saved indicator */}
           <div
             className="flex items-center px-3 py-1 flex-shrink-0 border-b"
             style={{ background: sidebarBg, borderBottomColor: dividerColor, minHeight: '32px' }}
@@ -343,26 +398,68 @@ const IdeaNotebook = forwardRef(function IdeaNotebook(
             </span>
           </div>
 
-          {/* Textarea */}
+          {/* Editor */}
           {selectedId ? (
-            <textarea
-              ref={textareaRef}
-              value={editorContent}
-              onChange={handleChange}
-              placeholder="Start writing..."
-              className="flex-1 resize-none outline-none p-4 text-sm text-gray-800 leading-relaxed"
-              style={{
-                background: '#ffffff',
-                fontFamily: 'ui-sans-serif, system-ui, sans-serif',
-                fontSize: '14px',
-                lineHeight: '1.7',
-              }}
-            />
+            <div className="relative flex-1 min-h-0">
+              <div
+                ref={editorRef}
+                contentEditable
+                suppressContentEditableWarning
+                data-placeholder="Start writing... paste an image with Ctrl+V"
+                className="idea-notebook-editor absolute inset-0 overflow-y-auto outline-none p-4"
+                style={{
+                  background: '#ffffff',
+                  fontFamily: 'ui-sans-serif, system-ui, sans-serif',
+                  fontSize: '14px',
+                  lineHeight: '1.7',
+                  color: '#1f2937',
+                }}
+                onInput={triggerSave}
+                onPaste={handlePaste}
+                onClick={handleEditorClick}
+              />
+
+              {/* Image resize/remove toolbar — appears below the selected image */}
+              {selectedImg && (
+                <div
+                  className="absolute flex items-center gap-1 rounded shadow-lg select-none z-10"
+                  style={{
+                    top: imgToolbarPos.top,
+                    left: imgToolbarPos.left,
+                    background: '#1f2937',
+                    padding: '3px 8px',
+                  }}
+                  onMouseDown={(e) => e.preventDefault()}
+                >
+                  <button
+                    onClick={() => scaleImg(-60)}
+                    title="Shrink"
+                    className="w-5 h-5 flex items-center justify-center text-gray-300 hover:text-white text-lg leading-none"
+                  >
+                    −
+                  </button>
+                  <span className="text-[11px] text-gray-400 px-1">size</span>
+                  <button
+                    onClick={() => scaleImg(60)}
+                    title="Grow"
+                    className="w-5 h-5 flex items-center justify-center text-gray-300 hover:text-white text-lg leading-none"
+                  >
+                    +
+                  </button>
+                  <div className="w-px h-3 mx-1" style={{ background: '#4b5563' }} />
+                  <button
+                    onClick={removeImg}
+                    title="Remove image"
+                    className="w-5 h-5 flex items-center justify-center text-gray-400 hover:text-red-400 text-xs leading-none"
+                  >
+                    ✕
+                  </button>
+                </div>
+              )}
+            </div>
           ) : (
             <div className="flex-1 flex items-center justify-center" style={{ background: '#ffffff' }}>
-              <p className="text-sm italic text-gray-400">
-                Press + to create your first note.
-              </p>
+              <p className="text-sm italic text-gray-400">Press + to create your first note.</p>
             </div>
           )}
         </div>
