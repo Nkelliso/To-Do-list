@@ -101,23 +101,9 @@ const IdeaNotebook = forwardRef(function IdeaNotebook(
     return () => window.removeEventListener('resize', h)
   }, [])
 
-  // Sort: pinned first (by explicit order, then updatedAt), then unpinned by updatedAt
+  // Sort all notes by explicit drag order; notes without an order go to the bottom
   const sortedNotes = useMemo(() => {
-    const ts = (n) => {
-      if (!n.updatedAt) return 0
-      return typeof n.updatedAt.toMillis === 'function'
-        ? n.updatedAt.toMillis()
-        : (n.updatedAt.seconds || 0) * 1000
-    }
-    return [...notes].sort((a, b) => {
-      if (a.pinned !== b.pinned) return a.pinned ? -1 : 1
-      if (a.pinned && b.pinned) {
-        const aOrd = a.order ?? Infinity
-        const bOrd = b.order ?? Infinity
-        if (aOrd !== bOrd) return aOrd - bOrd
-      }
-      return ts(b) - ts(a)
-    })
+    return [...notes].sort((a, b) => (a.order ?? Infinity) - (b.order ?? Infinity))
   }, [notes])
 
   // Auto-select first note on initial load only
@@ -193,9 +179,13 @@ const IdeaNotebook = forwardRef(function IdeaNotebook(
     if (editorRef.current && loadedNoteRef.current) {
       updateNote(loadedNoteRef.current, { content: editorRef.current.innerHTML })
     }
+    const minOrder = displayNotes.length > 0
+      ? Math.min(...displayNotes.map((n) => n.order ?? 0))
+      : 0
+    const newOrder = displayNotes.length > 0 ? minOrder - 1 : 0
     let docRef
     try {
-      docRef = await createNote()
+      docRef = await createNote(newOrder)
     } catch (err) {
       console.error('[IdeaNotebook] Failed to create note:', err)
       return
@@ -241,21 +231,15 @@ const IdeaNotebook = forwardRef(function IdeaNotebook(
     setDragOverId(null)
     if (!dragId || dragId === targetId) return
 
-    const pinnedNotes = displayNotes.filter((n) => n.pinned)
-    const dragIdx = pinnedNotes.findIndex((n) => n.id === dragId)
-    const targetIdx = pinnedNotes.findIndex((n) => n.id === targetId)
+    const dragIdx = displayNotes.findIndex((n) => n.id === dragId)
+    const targetIdx = displayNotes.findIndex((n) => n.id === targetId)
     if (dragIdx === -1 || targetIdx === -1) return
 
-    // Reorder pinned array
-    const reordered = [...pinnedNotes]
+    const reordered = [...displayNotes]
     const [moved] = reordered.splice(dragIdx, 1)
     reordered.splice(targetIdx, 0, moved)
 
-    // Optimistically update display list
-    const unpinned = displayNotes.filter((n) => !n.pinned)
-    setDisplayNotes([...reordered, ...unpinned])
-
-    // Persist new order to Firestore
+    setDisplayNotes(reordered)
     reordered.forEach((note, i) => updateNote(note.id, { order: i }))
   }
 
@@ -437,7 +421,7 @@ const IdeaNotebook = forwardRef(function IdeaNotebook(
                   onClick={() => switchNote(note.id)}
                   onPin={() => updateNote(note.id, { pinned: !note.pinned })}
                   onDelete={(e) => handleDelete(e, note.id)}
-                  draggable={note.pinned}
+                  draggable={true}
                   isDragOver={dragOverId === note.id}
                   onDragStart={(e) => handleDragStart(e, note.id)}
                   onDragOver={(e) => handleDragOver(e, note.id)}

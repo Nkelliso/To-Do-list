@@ -11,6 +11,7 @@ import AddTaskModal from './components/AddTaskModal'
 import BulkImportModal from './components/BulkImportModal'
 import IdeaNotebook from './components/IdeaNotebook'
 import IdeasPage from './components/IdeasPage'
+import ChatRoom from './components/ChatRoom'
 
 export default function App() {
   const { user, signIn, signOut } = useAuth()
@@ -133,8 +134,13 @@ export default function App() {
         )}
       </div>
 
+      {/* Chat page */}
+      <div className={`flex flex-col flex-1 min-h-0 w-full ${page !== 'chat' ? 'hidden' : ''}`}>
+        <ChatRoom user={user} />
+      </div>
+
       {/* To-Do + Calendar — always mounted */}
-      <div className={`flex flex-1 md:min-h-0 flex-col md:flex-row ${page === 'ideas' || page === 'ainotes' ? 'hidden' : ''}`}>
+      <div className={`flex flex-1 md:min-h-0 flex-col md:flex-row ${page === 'ideas' || page === 'ainotes' || page === 'chat' ? 'hidden' : ''}`}>
         {/* Left column — task list */}
         <div
           className="w-full md:w-2/5 md:flex-shrink-0 md:overflow-y-auto border-b md:border-b-0 md:border-r border-green-900/40"

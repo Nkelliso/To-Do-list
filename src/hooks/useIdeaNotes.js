@@ -72,10 +72,11 @@ export function useIdeaNotes(uid) {
     return () => { cancelled = true }
   }, [uid, loaded, migrated])
 
-  const createNote = () =>
+  const createNote = (order = 0) =>
     addDoc(collection(db, 'users', uid, 'ideaNotes'), {
       content: '',
       pinned: false,
+      order,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
     })

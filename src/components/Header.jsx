@@ -27,9 +27,9 @@ export default function Header({ user, onAddTask, onSignOut, page, onPageChange,
       className="grid grid-cols-[auto_1fr_auto] md:grid-cols-3 items-center border-b border-green-900/40 px-3 md:px-6 py-3 flex-shrink-0"
       style={{ background: '#261b2e' }}
     >
-      {/* Left: Add Task (hidden on Ideas page) */}
+      {/* Left: Add Task (hidden on Ideas/AI Notes/Chat pages) */}
       <div>
-        {page !== 'ideas' && page !== 'ainotes' && (
+        {page !== 'ideas' && page !== 'ainotes' && page !== 'chat' && (
           <button
             onClick={onAddTask}
             className="flex items-center gap-2 px-2 py-2 md:px-4 bg-green-700 hover:bg-green-600 text-white text-sm font-medium rounded-lg transition-colors cursor-pointer select-none"
@@ -75,11 +75,21 @@ export default function Header({ user, onAddTask, onSignOut, page, onPageChange,
         >
           AI Notes
         </button>
+        <button
+          onClick={() => onPageChange('chat')}
+          className={`text-xs md:text-sm font-semibold tracking-wide transition-colors cursor-pointer select-none pb-0.5 whitespace-nowrap ${
+            page === 'chat'
+              ? 'text-amber-100/90 border-b border-amber-100/60'
+              : 'text-amber-100/40 hover:text-amber-100/60'
+          }`}
+        >
+          Chat
+        </button>
       </div>
 
       {/* Right: Bulk import icon + User avatar */}
       <div className="flex justify-end items-center gap-2">
-        {page !== 'ideas' && page !== 'ainotes' && (
+        {page !== 'ideas' && page !== 'ainotes' && page !== 'chat' && (
           <button
             onClick={onBulkImport}
             title="Bulk import tasks"
