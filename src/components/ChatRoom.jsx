@@ -7,8 +7,11 @@ import {
   deleteDoc,
   query,
   orderBy,
+  where,
   limit,
   onSnapshot,
+  getDocs,
+  writeBatch,
   Timestamp,
 } from 'firebase/firestore'
 import { db } from '../firebase'
@@ -31,6 +34,21 @@ export default function ChatRoom({ user }) {
   const inputRef = useRef(null)
   const editInputRef = useRef(null)
   const didInitialScroll = useRef(false)
+
+  // On mount, purge messages older than 90 days
+  useEffect(() => {
+    const cutoff = Timestamp.fromDate(new Date(Date.now() - 90 * 24 * 60 * 60 * 1000))
+    const oldQ = query(
+      collection(db, 'chatMessages'),
+      where('createdAt', '<', cutoff)
+    )
+    getDocs(oldQ).then((snap) => {
+      if (snap.empty) return
+      const batch = writeBatch(db)
+      snap.docs.forEach((d) => batch.delete(d.ref))
+      return batch.commit()
+    }).catch(() => {})
+  }, [])
 
   useEffect(() => {
     const q = query(
