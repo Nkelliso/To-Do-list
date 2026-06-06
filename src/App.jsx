@@ -185,7 +185,7 @@ export default function App() {
       )}
 
       <div className="fixed bottom-2 left-3 text-[10px] text-white pointer-events-none select-none z-50">
-        v2.1
+        v2.2
       </div>
     </div>
   )
