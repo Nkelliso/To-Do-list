@@ -18,6 +18,7 @@ const TOTAL_HOURS = END_HOUR - START_HOUR
 const HOUR_HEIGHT = 64
 const TOTAL_HEIGHT = TOTAL_HOURS * HOUR_HEIGHT
 const TIME_GUTTER_PX = 40
+const PILL_HEIGHT = 22
 const HOUR_LINES = Array.from({ length: TOTAL_HOURS + 1 }, (_, i) => START_HOUR + i)
 
 const PRIORITY_PILL = {
@@ -50,7 +51,6 @@ function timeToTop(timeDue) {
 
 function getPositions(scheduledTasks) {
   const sorted = [...scheduledTasks].sort((a, b) => a.timeDue.localeCompare(b.timeDue))
-  const PILL_HEIGHT = 22
   const positions = []
   let lastBottom = -Infinity
   for (const task of sorted) {
