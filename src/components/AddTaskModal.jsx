@@ -18,7 +18,7 @@ export default function AddTaskModal({ onClose, onSave }) {
   const [name, setName] = useState('')
   const [dayDue, setDayDue] = useState('')
   const [timeDue, setTimeDue] = useState('09:00')
-  const [priority, setPriority] = useState(1)
+  const [priority, setPriority] = useState(2)
   const [error, setError] = useState('')
 
   // Escape to close
@@ -42,7 +42,7 @@ export default function AddTaskModal({ onClose, onSave }) {
     setName('')
     setDayDue('')
     setTimeDue('09:00')
-    setPriority(1)
+    setPriority(2)
     setError('')
   }
 
