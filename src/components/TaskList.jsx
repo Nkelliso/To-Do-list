@@ -157,8 +157,10 @@ export default function TaskList({ tasks, selectedTaskId, onSelectTask, onToggle
   // Group archived tasks by dayDue
   const archivedByDay = {}
   ALL_DAYS.forEach(d => { archivedByDay[d] = [] })
+  const unscheduledCompleted = []
   archivedTasks.forEach(t => {
     if (archivedByDay[t.dayDue]) archivedByDay[t.dayDue].push(t)
+    else unscheduledCompleted.push(t)
   })
 
   const sharedRowProps = (task) => ({
@@ -243,6 +245,26 @@ export default function TaskList({ tasks, selectedTaskId, onSelectTask, onToggle
                 </div>
               )
             })}
+            {unscheduledCompleted.length > 0 && (
+              <div className="mb-5">
+                <div className="flex items-center gap-2 mb-1.5 px-1">
+                  <span className="text-[10px] font-semibold text-stone-700 tracking-widest uppercase">
+                    No Day
+                  </span>
+                  <div className="flex-1 h-px bg-stone-900" />
+                </div>
+                <div className="flex flex-col gap-0.5">
+                  {unscheduledCompleted.map(task => (
+                    <CompletedRow
+                      key={task.id}
+                      task={task}
+                      onToggle={onToggle}
+                      onDelete={onDelete}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         )
       )}

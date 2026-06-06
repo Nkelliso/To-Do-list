@@ -401,7 +401,7 @@ export default function WeeklyCalendar({ tasks, selectedTaskId, onSelectTask, on
                     />
                   ))}
                   {positions.map(({ task, top }) => (
-                    <div key={task.id} className="absolute left-0.5 right-0.5" style={{ top }}>
+                    <div key={task.id} className="absolute left-0.5 right-0.5 overflow-hidden" style={{ top, height: PILL_HEIGHT }}>
                       <TaskPill
                         task={task}
                         isSelected={task.id === selectedTaskId}

@@ -16,9 +16,9 @@ const PRIORITY_COLORS = {
 
 export default function AddTaskModal({ onClose, onSave }) {
   const [name, setName] = useState('')
-  const [dayDue, setDayDue] = useState('M')
+  const [dayDue, setDayDue] = useState('')
   const [timeDue, setTimeDue] = useState('09:00')
-  const [priority, setPriority] = useState(() => getDayPriority('M'))
+  const [priority, setPriority] = useState(1)
   const [error, setError] = useState('')
 
   // Escape to close
@@ -28,9 +28,9 @@ export default function AddTaskModal({ onClose, onSave }) {
     return () => document.removeEventListener('keydown', handleKey)
   }, [onClose])
 
-  // Auto-update priority when day changes
+  // Auto-update priority when day changes (only if a day is selected)
   useEffect(() => {
-    setPriority(getDayPriority(dayDue))
+    if (dayDue) setPriority(getDayPriority(dayDue))
   }, [dayDue])
 
   const handleSave = () => {
@@ -38,11 +38,11 @@ export default function AddTaskModal({ onClose, onSave }) {
       setError('Task name is required.')
       return
     }
-    onSave({ name: name.trim(), dayDue, timeDue, priority: Number(priority) })
+    onSave({ name: name.trim(), dayDue: dayDue || null, timeDue, priority: Number(priority) })
     setName('')
-    setDayDue('M')
+    setDayDue('')
     setTimeDue('09:00')
-    setPriority(getDayPriority('M'))
+    setPriority(1)
     setError('')
   }
 
@@ -58,7 +58,7 @@ export default function AddTaskModal({ onClose, onSave }) {
       >
         <div>
           <h2 className="text-lg font-semibold text-amber-100/90">Add Task</h2>
-          <p className="text-xs text-stone-600 mt-0.5">Appears in both the task list and calendar once saved.</p>
+          <p className="text-xs text-stone-600 mt-0.5">Select a day to place it on the calendar, or skip to keep it as a to-do only.</p>
         </div>
 
         <div className="flex flex-col gap-4">
@@ -86,6 +86,7 @@ export default function AddTaskModal({ onClose, onSave }) {
                 className="border border-green-900/50 text-stone-200 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-green-700 focus:border-transparent"
                 style={{ background: '#30202c' }}
               >
+                <option value="">— No day —</option>
                 {DAYS.map((d) => (
                   <option key={d} value={d}>{DAY_LABEL[d]}</option>
                 ))}

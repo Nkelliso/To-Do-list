@@ -98,7 +98,7 @@ export default function App() {
   }
 
   return (
-    <div className="flex flex-col min-h-screen md:h-screen md:overflow-hidden" style={{ background: '#2d2438' }}>
+    <div className={`flex flex-col md:h-screen md:overflow-hidden ${page === 'chat' ? 'h-screen overflow-hidden' : 'min-h-screen'}`} style={{ background: '#2d2438' }}>
       <Header
         user={user}
         onAddTask={() => setShowModal(true)}
