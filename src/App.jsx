@@ -14,7 +14,7 @@ import IdeasPage from './components/IdeasPage'
 import ChatRoom from './components/ChatRoom'
 
 export default function App() {
-  const { user, signIn, signOut } = useAuth()
+  const { user, signIn, signOut, authError } = useAuth()
   const { tasks, addTask, toggleTask, deleteTask, updateTask, bulkAddTasks, archiveTasks, deleteTasks } = useTasks(user?.uid)
   const { notes, loaded: ideaNotesLoaded, createNote, updateNote: updateIdeaNote, deleteNote } = useIdeaNotes(user?.uid)
   const { content: aiContent, saveContent: saveAiContent, loaded: aiLoaded } = useAiNotes(user?.uid)
@@ -89,7 +89,7 @@ export default function App() {
   }
 
   if (user === null) {
-    return <Login onSignIn={signIn} />
+    return <Login onSignIn={signIn} authError={authError} />
   }
 
   const handleSaveTask = async (fields) => {

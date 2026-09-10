@@ -1,0 +1,8 @@
+{
+  "rewrites": [
+    {
+      "source": "/__/auth/:path*",
+      "destination": "https://personal-todo-list-b5ea8.firebaseapp.com/__/auth/:path*"
+    }
+  ]
+}

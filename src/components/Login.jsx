@@ -1,6 +1,6 @@
 import { useState } from 'react'
 
-export default function Login({ onSignIn }) {
+export default function Login({ onSignIn, authError = '' }) {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
@@ -45,8 +45,8 @@ export default function Login({ onSignIn }) {
             {loading ? 'Signing in...' : 'Sign in with Google'}
           </button>
 
-          {error && (
-            <p className="text-xs text-red-400 text-center break-words">{error}</p>
+          {(error || authError) && (
+            <p className="text-xs text-red-400 text-center break-words">{error || authError}</p>
           )}
         </div>
       </div>
