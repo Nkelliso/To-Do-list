@@ -32,6 +32,15 @@ const POPUP_UNAVAILABLE = new Set([
   'auth/internal-error',
 ])
 
+// Fake user for the dev-only "Skip sign-in" button. Never exists in production
+// builds: devSignIn is undefined unless Vite is running in dev mode.
+export const DEV_USER = {
+  uid: 'dev-local',
+  displayName: 'Local Dev',
+  email: 'dev@localhost',
+  photoURL: 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"%3E%3Ccircle cx="16" cy="16" r="16" fill="%2315803d"/%3E%3C/svg%3E',
+}
+
 export function useAuth() {
   // undefined = loading, null = signed out, object = signed in
   const [user, setUser] = useState(undefined)
@@ -61,7 +70,9 @@ export function useAuth() {
     }
   }
 
-  const signOutUser = () => signOut(auth)
+  const signOutUser = () => (user === DEV_USER ? setUser(null) : signOut(auth))
 
-  return { user, signIn, signOut: signOutUser, authError }
+  const devSignIn = import.meta.env.DEV ? () => setUser(DEV_USER) : undefined
+
+  return { user, signIn, signOut: signOutUser, authError, devSignIn }
 }

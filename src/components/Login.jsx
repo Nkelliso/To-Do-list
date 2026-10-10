@@ -1,6 +1,6 @@
 import { useState } from 'react'
 
-export default function Login({ onSignIn, authError = '' }) {
+export default function Login({ onSignIn, onDevSignIn, authError = '' }) {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
@@ -44,6 +44,16 @@ export default function Login({ onSignIn, authError = '' }) {
             </svg>
             {loading ? 'Signing in...' : 'Sign in with Google'}
           </button>
+
+          {/* Only passed in when running `npm run dev` — never in production */}
+          {import.meta.env.DEV && onDevSignIn && (
+            <button
+              onClick={onDevSignIn}
+              className="w-full px-4 py-2 rounded-lg text-xs font-medium text-amber-300/80 border border-dashed border-amber-700/50 hover:bg-amber-950/30 transition-colors cursor-pointer select-none"
+            >
+              Skip sign-in (localhost only · sample data)
+            </button>
+          )}
 
           {(error || authError) && (
             <p className="text-xs text-red-400 text-center break-words">{error || authError}</p>

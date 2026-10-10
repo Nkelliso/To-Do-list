@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
-import { useAuth } from './hooks/useAuth'
+import { useAuth, DEV_USER } from './hooks/useAuth'
 import { useTasks } from './hooks/useTasks'
+import { useLocalTasks } from './hooks/useLocalTasks'
 import { useIdeaNotes } from './hooks/useIdeaNotes'
 import { useAiNotes } from './hooks/useAiNotes'
 import Login from './components/Login'
@@ -14,10 +15,15 @@ import IdeasPage from './components/IdeasPage'
 import ChatRoom from './components/ChatRoom'
 
 export default function App() {
-  const { user, signIn, signOut, authError } = useAuth()
-  const { tasks, addTask, toggleTask, deleteTask, updateTask, bulkAddTasks, archiveTasks, deleteTasks } = useTasks(user?.uid)
-  const { notes, loaded: ideaNotesLoaded, createNote, updateNote: updateIdeaNote, deleteNote } = useIdeaNotes(user?.uid)
-  const { content: aiContent, saveContent: saveAiContent, loaded: aiLoaded } = useAiNotes(user?.uid)
+  const { user, signIn, signOut, authError, devSignIn } = useAuth()
+  // Dev "Skip sign-in" user gets in-memory tasks; Firestore hooks get no uid
+  const isDevUser = user === DEV_USER
+  const firestoreUid = isDevUser ? null : user?.uid
+  const remoteTasks = useTasks(firestoreUid)
+  const localTasks = useLocalTasks()
+  const { tasks, addTask, toggleTask, deleteTask, updateTask, bulkAddTasks, archiveTasks, deleteTasks } = isDevUser ? localTasks : remoteTasks
+  const { notes, loaded: ideaNotesLoaded, createNote, updateNote: updateIdeaNote, deleteNote } = useIdeaNotes(firestoreUid)
+  const { content: aiContent, saveContent: saveAiContent, loaded: aiLoaded } = useAiNotes(firestoreUid)
   const [showModal, setShowModal] = useState(false)
   const [selectedTaskId, setSelectedTaskId] = useState(null)
   const [page, setPage] = useState('todo')
@@ -29,7 +35,7 @@ export default function App() {
   // Weekly archive: on first task load, move completed tasks from before this
   // week into archived folders. Delete archives older than 30 days.
   useEffect(() => {
-    if (!user?.uid || tasks.length === 0 || archiveChecked.current) return
+    if (!user?.uid || isDevUser || tasks.length === 0 || archiveChecked.current) return
     archiveChecked.current = true
 
     // Find the Monday of the current week
@@ -89,7 +95,7 @@ export default function App() {
   }
 
   if (user === null) {
-    return <Login onSignIn={signIn} authError={authError} />
+    return <Login onSignIn={signIn} onDevSignIn={devSignIn} authError={authError} />
   }
 
   const handleSaveTask = async (fields) => {
