@@ -1,5 +1,5 @@
 import { useRef, useEffect, useState } from 'react'
-import { effectivePriority } from '../utils/priority'
+import { effectivePriority, getDayPriority } from '../utils/priority'
 
 const PRIORITY_BADGE = {
   1: 'bg-gray-800 text-gray-500',
@@ -31,6 +31,23 @@ export default function TaskRow({ task, isSelected, onSelect, onToggle, onDelete
   const inputRef = useRef(null)
   const [editing, setEditing] = useState(false)
   const [editName, setEditName] = useState(task.name)
+  const [priorityOpen, setPriorityOpen] = useState(false)
+  const priorityRef = useRef(null)
+
+  // Close the priority picker on outside click or Escape
+  useEffect(() => {
+    if (!priorityOpen) return
+    const handleDown = (e) => {
+      if (priorityRef.current && !priorityRef.current.contains(e.target)) setPriorityOpen(false)
+    }
+    const handleKey = (e) => { if (e.key === 'Escape') setPriorityOpen(false) }
+    document.addEventListener('pointerdown', handleDown)
+    document.addEventListener('keydown', handleKey)
+    return () => {
+      document.removeEventListener('pointerdown', handleDown)
+      document.removeEventListener('keydown', handleKey)
+    }
+  }, [priorityOpen])
 
   useEffect(() => {
     if (isSelected && rowRef.current) {
@@ -72,6 +89,13 @@ export default function TaskRow({ task, isSelected, onSelect, onToggle, onDelete
 
   const priority = effectivePriority(task)
   const textSize = PRIORITY_TEXT_SIZE[priority] || PRIORITY_TEXT_SIZE[1]
+  // Day-based urgency is a floor (see effectivePriority) — picking below it wouldn't show
+  const dayFloor = getDayPriority(task.dayDue)
+
+  const choosePriority = (p) => {
+    if (p !== task.priority) onUpdate(task.id, { priority: p })
+    setPriorityOpen(false)
+  }
 
   return (
     <div
@@ -115,14 +139,46 @@ export default function TaskRow({ task, isSelected, onSelect, onToggle, onDelete
         </span>
       )}
 
-      {/* Priority badge */}
-      <span
-        className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full flex-shrink-0 ${
-          PRIORITY_BADGE[priority] || PRIORITY_BADGE[1]
-        }`}
-      >
-        P{priority}
-      </span>
+      {/* Priority badge — tap to change */}
+      <div ref={priorityRef} className="relative flex-shrink-0" onClick={(e) => e.stopPropagation()}>
+        <button
+          type="button"
+          onClick={() => setPriorityOpen((o) => !o)}
+          className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full cursor-pointer hover:ring-1 hover:ring-white/20 ${
+            PRIORITY_BADGE[priority] || PRIORITY_BADGE[1]
+          } ${priorityOpen ? 'ring-1 ring-white/30' : ''}`}
+          title="Change priority"
+        >
+          P{priority}
+        </button>
+
+        {priorityOpen && (
+          <div
+            className="absolute right-0 top-full mt-1.5 z-30 flex gap-1 p-1.5 rounded-lg border border-green-900/50 shadow-xl"
+            style={{ background: '#3e2e38' }}
+          >
+            {[1, 2, 3, 4, 5].map((p) => {
+              const blocked = p < dayFloor && p !== 5
+              return (
+                <button
+                  key={p}
+                  type="button"
+                  disabled={blocked}
+                  onClick={() => choosePriority(p)}
+                  title={blocked ? `Due soon — can't go below P${dayFloor}` : undefined}
+                  className={`text-[11px] font-semibold px-2 py-1 rounded-full transition-all ${
+                    PRIORITY_BADGE[p]
+                  } ${p === priority ? 'ring-1 ring-white/40' : ''} ${
+                    blocked ? 'opacity-25 cursor-not-allowed' : 'cursor-pointer hover:brightness-125'
+                  }`}
+                >
+                  P{p}
+                </button>
+              )
+            })}
+          </div>
+        )}
+      </div>
 
       {/* Day + time */}
       <div className="flex items-center gap-1 flex-shrink-0 text-xs text-gray-600 tabular-nums">

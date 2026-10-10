@@ -19,6 +19,8 @@ export default function AddTaskModal({ onClose, onSave }) {
   const [dayDue, setDayDue] = useState('')
   const [timeDue, setTimeDue] = useState('09:00')
   const [priority, setPriority] = useState(2)
+  // Once the user moves the priority slider, picking a day no longer overrides it
+  const [priorityTouched, setPriorityTouched] = useState(false)
   const [error, setError] = useState('')
 
   // Escape to close
@@ -28,10 +30,12 @@ export default function AddTaskModal({ onClose, onSave }) {
     return () => document.removeEventListener('keydown', handleKey)
   }, [onClose])
 
-  // Auto-update priority when day changes (only if a day is selected)
-  useEffect(() => {
-    if (dayDue) setPriority(getDayPriority(dayDue))
-  }, [dayDue])
+  // Auto-update priority when day changes (only if a day is selected and the
+  // user hasn't already picked a priority by hand)
+  const handleDayChange = (day) => {
+    setDayDue(day)
+    if (day && !priorityTouched) setPriority(getDayPriority(day))
+  }
 
   const handleSave = () => {
     if (!name.trim()) {
@@ -43,6 +47,7 @@ export default function AddTaskModal({ onClose, onSave }) {
     setDayDue('')
     setTimeDue('09:00')
     setPriority(2)
+    setPriorityTouched(false)
     setError('')
   }
 
@@ -82,7 +87,7 @@ export default function AddTaskModal({ onClose, onSave }) {
               <label className="text-sm font-medium text-stone-400">Day Due</label>
               <select
                 value={dayDue}
-                onChange={(e) => setDayDue(e.target.value)}
+                onChange={(e) => handleDayChange(e.target.value)}
                 className="border border-green-900/50 text-stone-200 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-green-700 focus:border-transparent"
                 style={{ background: '#30202c' }}
               >
@@ -117,7 +122,7 @@ export default function AddTaskModal({ onClose, onSave }) {
               min="1"
               max="5"
               value={priority}
-              onChange={(e) => setPriority(Number(e.target.value))}
+              onChange={(e) => { setPriority(Number(e.target.value)); setPriorityTouched(true) }}
               className="w-full accent-green-600"
             />
             <div className="flex justify-between text-xs text-gray-600">
