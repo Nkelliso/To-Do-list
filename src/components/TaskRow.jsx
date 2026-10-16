@@ -1,5 +1,9 @@
-import { useRef, useEffect, useState } from 'react'
+import { useRef, useEffect, useState, useCallback } from 'react'
 import { effectivePriority, getDayPriority } from '../utils/priority'
+import { setDone } from '../utils/subtasks'
+import { useContextMenuTrigger } from '../hooks/useContextMenuTrigger'
+import SubtaskList from './SubtaskList'
+import TaskContextMenu from './TaskContextMenu'
 
 const PRIORITY_BADGE = {
   1: 'bg-gray-800 text-gray-500',
@@ -33,6 +37,14 @@ export default function TaskRow({ task, isSelected, onSelect, onToggle, onDelete
   const [editName, setEditName] = useState(task.name)
   const [priorityOpen, setPriorityOpen] = useState(false)
   const priorityRef = useRef(null)
+  const [subtasksOpen, setSubtasksOpen] = useState(false)
+  const [addingSubtask, setAddingSubtask] = useState(false)
+  const [menu, setMenu] = useState(null) // { x, y } while the right-click menu is open
+  const closeMenu = useCallback(() => setMenu(null), [])
+  const menuTrigger = useContextMenuTrigger((x, y) => setMenu({ x, y }))
+
+  const subtasks = task.subtasks || []
+  const subtasksDone = subtasks.filter((s) => s.done).length
 
   // Close the priority picker on outside click or Escape
   useEffect(() => {
@@ -97,7 +109,42 @@ export default function TaskRow({ task, isSelected, onSelect, onToggle, onDelete
     setPriorityOpen(false)
   }
 
+  // ── Subtasks ──
+  // The main task is done exactly when every subtask is done, so a subtask change
+  // that flips that also flips the main task, in the same write. Only the first
+  // level counts here; deeper subtasks roll up into their parent subtask.
+  const saveSubtasks = (next) => {
+    const allDone = next.length > 0 && next.every((s) => s.done)
+    if (next.length > 0 && allDone !== !!task.completed) {
+      onToggle(task.id, task.completed, { subtasks: next })
+    } else {
+      onUpdate(task.id, { subtasks: next })
+    }
+  }
+
+  // Checking the main task checks off its subtasks; unchecking leaves them as they are
+  const toggleMain = () => {
+    if (!task.completed && subtasks.some((s) => !s.done)) {
+      onToggle(task.id, false, { subtasks: subtasks.map((s) => setDone(s, true)) })
+    } else {
+      onToggle(task.id, task.completed)
+    }
+  }
+
+  const startAddSubtask = () => {
+    setSubtasksOpen(true)
+    setAddingSubtask(true)
+  }
+
+  const menuItems = [
+    { label: 'Add subtask', onClick: startAddSubtask },
+    { label: subtasks.length ? 'Delete task and subtasks' : 'Delete task', onClick: () => onDelete(task.id), danger: true },
+  ]
+
+  const showChevron = subtasks.length > 0 || addingSubtask
+
   return (
+    <div {...menuTrigger}>
     <div
       ref={rowRef}
       onClick={editing ? undefined : onSelect}
@@ -107,11 +154,30 @@ export default function TaskRow({ task, isSelected, onSelect, onToggle, onDelete
           : 'border-transparent hover:border-green-900/50 hover:bg-white/[0.02]'
       } ${task.completed ? 'opacity-50' : ''}`}
     >
+      {/* Expand / collapse subtasks — spacer keeps checkboxes lined up on rows without any */}
+      {showChevron ? (
+        <button
+          type="button"
+          onClick={(e) => { e.stopPropagation(); setSubtasksOpen((o) => !o) }}
+          className="w-3.5 h-3.5 flex-shrink-0 text-stone-500 hover:text-stone-300 cursor-pointer"
+          title={subtasksOpen ? 'Hide subtasks' : 'Show subtasks'}
+        >
+          <svg
+            className={`w-3.5 h-3.5 transition-transform ${subtasksOpen ? 'rotate-90' : ''}`}
+            fill="none" stroke="currentColor" viewBox="0 0 24 24"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
+          </svg>
+        </button>
+      ) : (
+        <span className="w-3.5 flex-shrink-0" />
+      )}
+
       {/* Checkbox */}
       <input
         type="checkbox"
         checked={task.completed}
-        onChange={(e) => { e.stopPropagation(); onToggle(task.id, task.completed) }}
+        onChange={(e) => { e.stopPropagation(); toggleMain() }}
         onClick={(e) => e.stopPropagation()}
         className="w-4 h-4 rounded accent-green-600 cursor-pointer flex-shrink-0"
       />
@@ -137,6 +203,20 @@ export default function TaskRow({ task, isSelected, onSelect, onToggle, onDelete
         >
           {task.name}
         </span>
+      )}
+
+      {/* Subtask progress count — tap to show/hide */}
+      {subtasks.length > 0 && (
+        <button
+          type="button"
+          onClick={(e) => { e.stopPropagation(); setSubtasksOpen((o) => !o) }}
+          className={`text-[11px] tabular-nums px-1.5 py-0.5 rounded-full flex-shrink-0 cursor-pointer ${
+            subtasksDone === subtasks.length ? 'bg-green-600/15 text-green-400' : 'bg-white/5 text-stone-400'
+          }`}
+          title={subtasksOpen ? 'Hide subtasks' : 'Show subtasks'}
+        >
+          {subtasksDone}/{subtasks.length}
+        </button>
       )}
 
       {/* Priority badge — tap to change */}
@@ -196,6 +276,28 @@ export default function TaskRow({ task, isSelected, onSelect, onToggle, onDelete
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
         </svg>
       </button>
+    </div>
+
+    {/* Subtask progress bar */}
+    {subtasks.length > 0 && (
+      <div className="h-[3px] ml-[38px] mr-3 -mt-0.5 mb-1 rounded-full bg-white/[0.06] overflow-hidden">
+        <div
+          className="h-full bg-green-600 transition-[width] duration-200"
+          style={{ width: `${(subtasksDone / subtasks.length) * 100}%` }}
+        />
+      </div>
+    )}
+
+    {subtasksOpen && (subtasks.length > 0 || addingSubtask) && (
+      <SubtaskList
+        subtasks={subtasks}
+        onChange={saveSubtasks}
+        adding={addingSubtask}
+        onStopAdding={() => setAddingSubtask(false)}
+      />
+    )}
+
+    {menu && <TaskContextMenu x={menu.x} y={menu.y} items={menuItems} onClose={closeMenu} />}
     </div>
   )
 }

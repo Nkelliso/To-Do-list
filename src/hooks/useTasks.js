@@ -35,13 +35,15 @@ export function useTasks(uid) {
       createdAt: serverTimestamp(),
     })
 
-  const toggleTask = (id, currentCompleted) =>
+  // `extra` rides along in the same write (e.g. subtasks that caused the toggle)
+  const toggleTask = (id, currentCompleted, extra = {}) =>
     updateDoc(doc(db, 'tasks', id), {
       completed: !currentCompleted,
       completedAt: currentCompleted ? deleteField() : serverTimestamp(),
       completedDate: currentCompleted
         ? deleteField()
         : new Date().toISOString().split('T')[0],
+      ...extra,
     })
 
   const deleteTask = (id) => deleteDoc(doc(db, 'tasks', id))

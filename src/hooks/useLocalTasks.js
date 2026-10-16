@@ -12,6 +12,20 @@ const SAMPLE_TASKS = [
   { name: 'Sample: manually critical', dayDue: 'Th', timeDue: '09:00', priority: 5 },
   { name: 'Sample: weekend chore', dayDue: 'Wknd', timeDue: '12:00', priority: 1 },
   { name: 'Sample: no day set', dayDue: null, timeDue: '09:00', priority: 3 },
+  {
+    name: 'Sample: has subtasks', dayDue: 'F', timeDue: '17:00', priority: 3,
+    subtasks: [
+      { id: 's1', name: 'First step', done: true },
+      {
+        id: 's2', name: 'Second step', done: false,
+        subtasks: [
+          { id: 's2a', name: 'Part A', done: true },
+          { id: 's2b', name: 'Part B', done: false },
+        ],
+      },
+      { id: 's3', name: 'Third step', done: false },
+    ],
+  },
 ].map((t, i) => ({ ...t, id: `local-${i}`, uid: 'dev-local', completed: false }))
 
 let nextId = SAMPLE_TASKS.length
@@ -25,10 +39,11 @@ export function useLocalTasks() {
   const addTask = async (fields) =>
     setTasks((ts) => [...ts, { ...fields, id: `local-${nextId++}`, uid: 'dev-local', completed: false }])
 
-  const toggleTask = async (id, currentCompleted) =>
+  const toggleTask = async (id, currentCompleted, extra = {}) =>
     patch(id, {
       completed: !currentCompleted,
       completedDate: currentCompleted ? undefined : new Date().toISOString().split('T')[0],
+      ...extra,
     })
 
   const deleteTask = async (id) => setTasks((ts) => ts.filter((t) => t.id !== id))
